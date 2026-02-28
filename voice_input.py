@@ -1,39 +1,33 @@
-import time
-import numpy as np
 import sounddevice as sd
+import numpy as np
+from faster_whisper import WhisperModel
 
-from transformers import VoxtralRealtimeForConditionalGeneration, AutoProcessor
+from constants import WHISPER_MODEL_SIZE
 
-from constants import VOXTRAL_MODEL
-
-processor = AutoProcessor.from_pretrained(VOXTRAL_MODEL)
-model = VoxtralRealtimeForConditionalGeneration.from_pretrained(
-    VOXTRAL_MODEL, device_map="auto"
-)
-print("Voxtral model loaded successfully with device set as", model.device)
+model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
 
 
 def record_and_transcribe(duration=3):
     fs = 16000
     print(f"Listening for {duration} seconds...")
 
+    # 1. Record
     audio = sd.rec(int(duration * fs), samplerate=fs,
                    channels=1, dtype='float32')
     sd.wait()
+
+    # 2. IMPORTANT: Flatten to 1D for Whisper
     audio_data = audio.flatten()
 
-    print("Audio recorded, transcribing...")
-    start_time = time.time()
-    inputs = processor(audio_data, return_tensors="pt")
-    inputs = inputs.to(model.device, dtype=model.dtype)
+    # 3. Transcribe
+    segments, info = model.transcribe(audio_data, beam_size=5)
 
-    outputs = model.generate(**inputs)
-    decoded_outputs = processor.batch_decode(outputs, skip_special_tokens=True)
+    full_text = ""
+    for segment in segments:
+        print(f"[{segment.start:.2f}s] {segment.text}")
+        full_text += segment.text
 
-    end_time = time.time()
-    print(f"Transcription took {end_time - start_time:.2f} seconds")
-
-    return decoded_outputs[0]
+    return full_text.strip()
 
 
 if __name__ == "__main__":

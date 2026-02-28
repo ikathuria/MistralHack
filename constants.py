@@ -17,4 +17,5 @@ STRICT RULES:
 """
 
 # voice-to-text
+WHISPER_MODEL_SIZE = "base.en"
 VOXTRAL_MODEL = "mistralai/Voxtral-Mini-4B-Realtime-2602"
