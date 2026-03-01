@@ -3,8 +3,11 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# User-specific game files
+test.*
+game_logic_backup.py
+
 # User-specific files
-test.py
 *.rsuser
 *.suo
 *.user
