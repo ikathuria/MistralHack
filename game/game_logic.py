@@ -86,21 +86,22 @@ def draw_ui(screen, registry):
 
     font = pygame.font.SysFont("Arial", 16, bold=True)
     # health
-    hp_ratio = registry.player.health / registry.max_health
+    hp_ratio = registry.player.health / registry.player.max_health
     pygame.draw.rect(screen, (255, 50, 50), (30, 35, int(200 * hp_ratio), 10))
     screen.blit(
         font.render(f"HP: {registry.player.health}", True, (255, 255, 255)), (240, 32)
     )
 
     # mana
-    mana_ratio = registry.mana / 100
+    mana_ratio = registry.player.mana / 100
     pygame.draw.rect(screen, (0, 150, 255), (30, 55, int(200 * mana_ratio), 10))
     screen.blit(
-        font.render(f"MANA: {int(registry.mana)}", True, (255, 255, 255)), (240, 52)
+        font.render(f"MANA: {int(registry.player.mana)}", True, (255, 255, 255)),
+        (240, 52),
     )
 
     # inventory / sigils
-    sigils_text = f"SIGILS: {len(registry.inventory)}/3"
+    sigils_text = f"SIGILS: {len(registry.player.inventory)}/3"
     screen.blit(font.render(sigils_text, True, (255, 215, 0)), (30, 75))
 
     # dialogue log
@@ -205,16 +206,16 @@ def update(screen, registry):
                 if keys[pygame.K_e] and not registry.training_active:
                     msg = npc.dialogue
                     if npc.name == "Elder":
-                        if "Elder Sigil" not in registry.inventory:
-                            registry.inventory.append("Elder Sigil")
+                        if "Elder Sigil" not in registry.player.inventory:
+                            registry.player.inventory.append("Elder Sigil")
                             registry.lillith_barrier_strength -= 33
                             msg = "Take my Sigil. But Lillith has hidden the last one. Shout a 'Pulse of Truth' to see the veil!"
                         elif not registry.hidden_sigil_revealed:
                             msg = "Use your mana! Say 'Pulse of Truth' to reveal what is hidden in the latent space."
 
                     elif npc.name == "Guard":
-                        if "Guard Sigil" not in registry.inventory:
-                            registry.inventory.append("Guard Sigil")
+                        if "Guard Sigil" not in registry.player.inventory:
+                            registry.player.inventory.append("Guard Sigil")
                             registry.lillith_barrier_strength -= 33
                             msg = "Sigil earned. But you're slow! Let's calibrate your reflexes. (Press E again to start training)"
                         elif not registry.training_active:
@@ -283,14 +284,16 @@ def update(screen, registry):
                 )
                 if registry.training_sessions >= 2:
                     registry.lillith_barrier_strength -= 1
-                    registry.can_cast_ult = True
+                    registry.player.can_cast_ult = True
                     dialogue = "Guard: Reflexes calibrated. You can now cast high-damage spells!"
                     narrator.npc_dialogue("Guard", dialogue)
                     registry.combat_log.append(dialogue)
 
-
         # hidden sigil logic
-        if registry.hidden_sigil_revealed and "Hidden Sigil" not in registry.inventory:
+        if (
+            registry.hidden_sigil_revealed
+            and "Hidden Sigil" not in registry.player.inventory
+        ):
             sx, sy = registry.hidden_sigil_pos
             pygame.draw.circle(
                 screen, (255, 255, 0), (int(sx - cam_x), int(sy - cam_y)), 15
@@ -301,7 +304,7 @@ def update(screen, registry):
             if (
                 (registry.player.x - sx) ** 2 + (registry.player.y - sy) ** 2
             ) ** 0.5 < 40:
-                registry.inventory.append("Hidden Sigil")
+                registry.player.inventory.append("Hidden Sigil")
                 registry.lillith_barrier_strength -= 33
                 registry.combat_log.append(
                     "Architect: You found the Hidden Sigil! The veil is pierced."
@@ -356,7 +359,7 @@ def update(screen, registry):
                     registry.screen_shake = 5
 
             # dynamic spells logic
-            for spell in registry.spells[:]:
+            for spell in registry.player.spells[:]:
                 spell["x"] += spell.get("vx", 0)
                 spell["y"] += spell.get("vy", 0)
                 pygame.draw.circle(
@@ -368,7 +371,7 @@ def update(screen, registry):
 
                 spell["life"] = spell.get("life", 60) - 1
                 if spell["life"] <= 0:
-                    registry.spells.remove(spell)
+                    registry.player.spells.remove(spell)
 
                 # collision with Lillith
                 vdist = (
@@ -380,9 +383,9 @@ def update(screen, registry):
 
                     voice_line = random.choice(["ouch", "damn", "ugh"])
                     narrator.npc_dialogue(registry.villain.name, voice_line)
-                    registry.villain.health -= 20
+                    registry.villain.health -= 33
 
-                    registry.spells.remove(spell)
+                    registry.player.spells.remove(spell)
 
         # player
         draw_sprite(
@@ -433,11 +436,11 @@ def update(screen, registry):
             if keys[pygame.K_r]:
                 clear_enemies(registry)
                 registry.player.health = registry.player.max_health
-                registry.score = 0
+                registry.player.mana = registry.player.max_mana
+                registry.player.can_cast_ult = False
                 registry.lillith_barrier_strength = 100.0
                 registry.villain.health = registry.villain.max_health
-                registry.inventory = []
-                registry.quest_stage = 0
+                registry.player.inventory = []
                 registry.player.x = 400
                 registry.player.y = 300
                 randomize_positions(registry)
@@ -465,11 +468,11 @@ def update(screen, registry):
             if keys[pygame.K_r]:
                 clear_enemies(registry)
                 registry.player.health = registry.player.max_health
-                registry.score = 0
+                registry.player.mana = registry.player.max_mana
+                registry.player.can_cast_ult = False
                 registry.lillith_barrier_strength = 100.0
                 registry.villain.health = registry.villain.max_health
-                registry.inventory = []
-                registry.quest_stage = 0
+                registry.player.inventory = []
                 registry.player.x = 400
                 registry.player.y = 300
                 randomize_positions(registry)

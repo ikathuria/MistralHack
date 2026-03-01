@@ -116,7 +116,7 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 if not registry.is_recording:
                     # START RECORDING
-                    if registry.mana < 20:
+                    if registry.player.mana < 10:
                         registry.combat_log.append(
                             "Architect: Your mana is too low to shift reality."
                         )
@@ -124,7 +124,7 @@ if __name__ == "__main__":
                         continue
 
                     registry.is_recording = True
-                    registry.mana -= 20
+                    registry.player.mana -= 10
                     registry.combat_log.append(
                         "Architect: LISTENING... (Press Space again to finish)"
                     )
@@ -165,14 +165,14 @@ if __name__ == "__main__":
                                 spell_type, color = "fire", (255, 100, 0)
 
                             dx, dy = (
-                                registry.villain["x"] - registry.player_x,
-                                registry.villain["y"] - registry.player_y,
+                                registry.villain.x - registry.player.x,
+                                registry.villain.y - registry.player.y,
                             )
                             n = max(1, (dx**2 + dy**2) ** 0.5)
-                            registry.spells.append(
+                            registry.player.spells.append(
                                 {
-                                    "x": registry.player_x,
-                                    "y": registry.player_y,
+                                    "x": registry.player.x,
+                                    "y": registry.player.y,
                                     "vx": (dx / n) * 8,
                                     "vy": (dy / n) * 8,
                                     "color": color,
