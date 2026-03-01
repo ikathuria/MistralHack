@@ -95,4 +95,4 @@ python engine.py
 - **Primary AI Models**: `devstral-medium-latest`, `scribe_v2`, `eleven_turbo_v2_5`.
 
 ---
-*Created with ❤️ by Ishaan Kathuria.*
+*Created with ❤️ by Ishani Kathuria.*
