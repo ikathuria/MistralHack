@@ -11,11 +11,8 @@ from elevenlabs import stream
 
 from utils.constants import ELEVENLABS_MODEL_V2T, ELEVENLABS_MODEL_T2V
 
-###########################################################################################
 load_dotenv()
 client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
-###########################################################################################
-
 
 _recording_data = []
 _stream = None

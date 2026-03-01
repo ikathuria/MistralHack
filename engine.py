@@ -18,20 +18,17 @@ from utils.constants import (
 import game.game_logic as game_logic  # vibe file
 from game.constants import GlobalRegistry
 
-###########################################################################################
-# Initialize Original Backup if not exists
+# initialize original backup if not exists
 if not os.path.exists(GAME_LOGIC_ORIGINAL_PATH):
     shutil.copy(GAME_LOGIC_PATH, GAME_LOGIC_ORIGINAL_PATH)
     print(f"Created base backup: {GAME_LOGIC_ORIGINAL_PATH}")
 
-###########################################################################################
 pygame.init()
 screen = pygame.display.set_mode((800, 600))
 clock = pygame.time.Clock()
 
 # constant game registry that survives hot reloads
 registry = GlobalRegistry()
-###########################################################################################
 
 
 def get_streaming_vibe(user_intent, current_code, screen):
