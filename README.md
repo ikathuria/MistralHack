@@ -1,4 +1,6 @@
-# 🧙‍♂️ MistralHack: The Reality-Shift RPG
+![Mistral Hack Banner](hackathon/MistralHack%20banner.png)
+
+# 🧙 MistralHack: The Reality-Shift RPG
 
 **MistralHack** is an experimental RPG built for the **Mistral AI Hackathon**. It pushes the boundaries of real-time AI integration by allowing players to rewrite the game's source code through voice commands while playing.
 
@@ -90,9 +92,11 @@ python engine.py
 ---
 
 ## 🏆 Hackathon Details
+- **Date**: Feb 28th - March 1st, 2026
 - **Submission**: Mistral AI Hackathon 2026.
 - **Focus**: Demonstrating the power of Mistral's coding models and ElevenLabs voice models in interactive, low-latency environments.
 - **Primary AI Models**: `devstral-medium-latest`, `scribe_v2`, `eleven_turbo_v2_5`.
+- **Demo Video**: [Link to Demo Video](https://youtu.be/jj_8OoTdjRQ)
 
 ---
 *Created with ❤️ by Ishani Kathuria.*
