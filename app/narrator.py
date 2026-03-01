@@ -54,7 +54,7 @@ def record_and_transcribe(duration=4):
         return ""
 
 
-def announce_vibe_shift(text):
+def announce_vibe_shift(text, voice_id="pNInz6obpgDQGcFmaJgB"):
     """
     Streams audio directly to speakers. 
     Use this for the 'Game Architect' persona.
@@ -62,7 +62,7 @@ def announce_vibe_shift(text):
     try:
         audio_stream = client.text_to_speech.convert(
             text=text,
-            voice_id="pNInz6obpgDQGcFmaJgB",  # Adam
+            voice_id=voice_id,
             model_id=ELEVENLABS_MODEL_T2V,
             output_format="mp3_44100_128"
         )
@@ -79,6 +79,21 @@ def architect_commentary(event_type):
         "glitch": "The logic is fracturing. Hold on!"
     }
     announce_vibe_shift(lines.get(event_type, "Proceeding."))
+
+
+def npc_dialogue(npc_name, dialogue):
+    if npc_name == "Player": # player
+        voice_id = "fgDJOgmENIR82PueQrVs"
+    elif npc_name == "Elder": # ally
+        voice_id = "oR4uRy4fHDUGGISL0Rev"
+    elif npc_name == "Guard": # ally
+        voice_id = "si0svtk05vPEuvwAW93c"
+    elif npc_name == "Lillith":  # villain
+        voice_id = "mLw8kuDeVGqVstOYjRII"
+    else: # architect
+        voice_id = "pNInz6obpgDQGcFmaJgB"
+
+    announce_vibe_shift(dialogue, voice_id=voice_id)
 
 
 if __name__ == "__main__":

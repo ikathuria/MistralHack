@@ -9,7 +9,8 @@ import app.narrator as narrator
 
 from utils.utils import clean_ai_code
 from utils.constants import (
-    GAME_LOGIC_PATH, GAME_LOGIC_BACKUP_PATH,
+    GAME_LOGIC_PATH,
+    GAME_LOGIC_BACKUP_PATH,
 )
 
 import game.game_logic as game_logic  # vibe file
@@ -40,7 +41,7 @@ def get_streaming_vibe(user_intent, current_code, screen):
         if len(full_content) % 500 == 0:
             threading.Thread(
                 target=narrator.announce_vibe_shift,
-                args=("Hold steady, Brawler. The arena is shifting.",)
+                args=("Hold steady, Brawler. The arena is shifting.",),
             ).start()
 
         token = chunk.data.choices[0].delta.content
@@ -50,12 +51,13 @@ def get_streaming_vibe(user_intent, current_code, screen):
             screen.fill((20, 20, 20))
             game_logic.update(screen, registry)
 
-            font = pygame.font.SysFont('Arial', 24, bold=True)
+            font = pygame.font.SysFont("Arial", 24, bold=True)
             txt = font.render(
                 f"REALITY RECONSTRUCTING: {len(full_content)} BYTES",
-                True, (255, 200, 0)
+                True,
+                (255, 200, 0),
             )
-            screen.blit(txt, (400 - txt.get_width()//2, 50))
+            screen.blit(txt, (400 - txt.get_width() // 2, 50))
 
             render_offset = (random.randint(-5, 5), random.randint(-5, 5))
             screen.blit(screen, render_offset)
@@ -76,10 +78,10 @@ def apply_new_vibe(raw_ai_message):
     clean_code = clean_ai_code(raw_ai_message)
 
     try:
-        compile(clean_code, GAME_LOGIC_PATH, 'exec')
+        compile(clean_code, GAME_LOGIC_PATH, "exec")
     except Exception as e:
         print(f"BRAWL ERROR: AI generated invalid syntax: {e}")
-        narrator.announce_vibe_shift("Logic corrupted. Reverting.")
+        narrator.architect_commentary("glitch")
         return False
 
     with open(GAME_LOGIC_BACKUP_PATH, "w") as b:
@@ -95,13 +97,13 @@ def apply_new_vibe(raw_ai_message):
         return True
     except Exception as e:
         print(f"Runtime Error during reload: {e}")
-        narrator.announce_vibe_shift("Logic corrupted. Reverting.")
+        narrator.architect_commentary("glitch")
         os.replace(GAME_LOGIC_BACKUP_PATH, GAME_LOGIC_PATH)
         return False
 
 
 if __name__ == "__main__":
-    narrator.architect_commentary("intro")
+    # narrator.architect_commentary("intro")
 
     running = True
     while running:
@@ -112,9 +114,20 @@ if __name__ == "__main__":
 
             # get user command via voice
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if registry.mana < 20:
+                    registry.combat_log.append(
+                        "Architect: Your mana is too low to shift reality."
+                    )
+                    narrator.announce_vibe_shift("Mana depleted, Brawler.")
+                    continue
+
                 user_command = narrator.record_and_transcribe(duration=4)
 
                 if user_command:
+                    # Deduct mana
+                    registry.mana -= 20
+                    registry.screen_shake = 60  # Start shake
+
                     with open(GAME_LOGIC_PATH, "r") as f:
                         current_code = f.read()
 
@@ -122,14 +135,24 @@ if __name__ == "__main__":
                     raw_new_code = get_streaming_vibe(
                         user_command, current_code, screen
                     )
-                    apply_new_vibe(raw_new_code)
+                    success = apply_new_vibe(raw_new_code)
+
+                    if success:
+                        registry.combat_log.append(
+                            f"Architect: Shifted {user_command}."
+                        )
+                    else:
+                        registry.combat_log.append(
+                            "Architect: Reality reject. Glitch detected."
+                        )
 
                     threading.Thread(
                         target=narrator.announce_vibe_shift,
-                        args=("Reality stabilized.",)
+                        args=("Reality stabilized.",),
                     ).start()
 
         # regular game update
+        # logic handles player movement, map rendering, and NPCs
         game_logic.update(screen, registry)
 
         pygame.display.flip()
