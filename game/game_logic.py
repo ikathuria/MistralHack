@@ -1,11 +1,38 @@
 import pygame
 import random
 import app.narrator as narrator
-
+from game.constants import COLORS
 
 # global game assets
 ASSETS = {}
 
+# Background rendering constants
+BG_TILE_SIZE = 64
+ARENA_SIZE = (2000, 2000)
+background_surface = None
+
+if 'player_class' not in globals():
+    player_class = None
+
+def generate_background():
+    """Tiles the background surface once at start-up."""
+    global background_surface
+    try:
+        background_surface = pygame.Surface(ARENA_SIZE)
+        # Placeholder with pattern (Dark Green Grass)
+        grass_tile = pygame.Surface((BG_TILE_SIZE, BG_TILE_SIZE))
+        grass_tile.fill((30, 80, 30))
+        pygame.draw.rect(
+            grass_tile, (40, 90, 40), (0, 0, BG_TILE_SIZE, BG_TILE_SIZE), 1
+        )
+
+        for y in range(0, ARENA_SIZE[1], BG_TILE_SIZE):
+            for x in range(0, ARENA_SIZE[0], BG_TILE_SIZE):
+                background_surface.blit(grass_tile, (x, y))
+    except Exception as e:
+        print(f"Background gen error: {e}")
+        if background_surface:
+            background_surface.fill((20, 60, 20))
 
 def load_assets():
     """Loads game assets, ensuring pygame is initialized first."""
@@ -40,6 +67,10 @@ def load_assets():
         except:
             ASSETS = {}
 
+def clear_enemies(registry):
+    """Clears dynamic entities like training orbs and spells."""
+    registry.training_orbs = []
+    registry.player.spells = []
 
 def randomize_positions(registry):
     """Randomly places entities on empty tiles."""
@@ -58,7 +89,6 @@ def randomize_positions(registry):
             npc.x, npc.y = empty_tiles.pop()
         registry.villain.x, registry.villain.y = empty_tiles.pop()
 
-
 def check_collision(x, y, registry):
     grid_x, grid_y = int(x // registry.tile_size), int(y // registry.tile_size)
     if 0 <= grid_y < len(registry.world_map) and 0 <= grid_x < len(
@@ -67,7 +97,6 @@ def check_collision(x, y, registry):
         return registry.world_map[grid_y][grid_x] == 1
     return True
 
-
 def draw_sprite(screen, sprite_key, x, y, size, camera_offset=(0, 0)):
     rx, ry = x - camera_offset[0], y - camera_offset[1]
     if sprite_key in ASSETS:
@@ -75,14 +104,13 @@ def draw_sprite(screen, sprite_key, x, y, size, camera_offset=(0, 0)):
         rect = img.get_rect(center=(rx, ry))
         screen.blit(img, rect)
     else:
-        color = (255, 200, 0) if sprite_key == "mage" else (0, 150, 255)
+        color = COLORS['SUPERCELL_GOLD'] if sprite_key == "mage" else (0, 150, 255)
         pygame.draw.circle(screen, color, (int(rx), int(ry)), size // 2)
-
 
 def draw_ui(screen, registry):
     # stats bar
     pygame.draw.rect(screen, (20, 20, 20), (20, 20, 300, 80))
-    pygame.draw.rect(screen, (255, 200, 0), (20, 20, 300, 80), 2)
+    pygame.draw.rect(screen, COLORS['SUPERCELL_GOLD'], (20, 20, 300, 80), 2)
 
     font = pygame.font.SysFont("Arial", 16, bold=True)
     # health
@@ -102,12 +130,12 @@ def draw_ui(screen, registry):
 
     # inventory / sigils
     sigils_text = f"SIGILS: {len(registry.player.inventory)}/3"
-    screen.blit(font.render(sigils_text, True, (255, 215, 0)), (30, 75))
+    screen.blit(font.render(sigils_text, True, COLORS['SUPERCELL_GOLD']), (30, 75))
 
     # dialogue log
     log_rect = pygame.Rect(0, 500, 800, 100)
     pygame.draw.rect(screen, (10, 10, 10), log_rect)
-    pygame.draw.line(screen, (255, 200, 0), (0, 500), (800, 500), 3)
+    pygame.draw.line(screen, COLORS['SUPERCELL_GOLD'], (0, 500), (800, 500), 3)
     font_log = pygame.font.SysFont("Consolas", 16)
     for i, msg in enumerate(registry.combat_log[-4:]):
         screen.blit(
@@ -124,9 +152,12 @@ def draw_ui(screen, registry):
         rec_txt = font_rec.render("VOICE RECORDING...", True, (255, 50, 50))
         screen.blit(rec_txt, (420, 30))
 
-
 def update(screen, registry):
     try:
+        global background_surface, player_class
+        if background_surface is None:
+            generate_background()
+
         if not ASSETS:
             load_assets()
         if not hasattr(registry, "initialized") or not registry.initialized:
@@ -134,9 +165,8 @@ def update(screen, registry):
             registry.initialized = True
 
         keys = pygame.key.get_pressed()
-        screen.fill((10, 25, 10))
 
-        # camera follow
+        # Use pre-rendered background based on camera
         cam_x = registry.player.x - 400
         cam_y = registry.player.y - 300
 
@@ -152,19 +182,24 @@ def update(screen, registry):
             cam_y += random.randint(-5, 5)
             registry.screen_shake -= 1
 
-        # draw map with camera
+        if background_surface:
+            screen.blit(background_surface, (-cam_x, -cam_y))
+        else:
+            screen.fill((10, 25, 10))
+
+        # draw map walls with camera (only tile == 1)
         for r, row in enumerate(registry.world_map):
             for c, tile in enumerate(row):
-                rx, ry = c * registry.tile_size - cam_x, r * registry.tile_size - cam_y
                 if tile == 1:
+                    rx, ry = (
+                        c * registry.tile_size - cam_x,
+                        r * registry.tile_size - cam_y,
+                    )
                     pygame.draw.rect(screen, (40, 40, 40), (rx, ry, 100, 100))
                     pygame.draw.rect(screen, (80, 80, 80), (rx, ry, 100, 100), 2)
-                else:
-                    pygame.draw.rect(screen, (20, 40, 20), (rx, ry, 100, 100))
-                    pygame.draw.rect(screen, (30, 50, 30), (rx, ry, 100, 100), 1)
 
         # player movement
-        speed = 5
+        speed = registry.player.speed
         old_x, old_y = registry.player.x, registry.player.y
         if keys[pygame.K_LEFT]:
             registry.player.x -= speed
@@ -254,7 +289,7 @@ def update(screen, registry):
 
                 pygame.draw.circle(
                     screen,
-                    (0, 255, 255),
+                    COLORS['BRAWL_PURPLE'],
                     (int(orb["x"] - cam_x), int(orb["y"] - cam_y)),
                     10,
                 )
@@ -332,7 +367,7 @@ def update(screen, registry):
                 font_v.render(
                     f"BARRIER: {int(registry.lillith_barrier_strength)}%",
                     True,
-                    (191, 0, 255),
+                    COLORS['BRAWL_PURPLE'],
                 ),
                 (barrier_rx - 40, barrier_ry + 110),
             )
@@ -364,7 +399,7 @@ def update(screen, registry):
                 spell["y"] += spell.get("vy", 0)
                 pygame.draw.circle(
                     screen,
-                    spell.get("color", (255, 255, 255)),
+                    spell.get("color", COLORS['SUPERCELL_GOLD']),
                     (int(spell["x"] - cam_x), int(spell["y"] - cam_y)),
                     spell.get("size", 10),
                 )
@@ -405,7 +440,7 @@ def update(screen, registry):
                 f_sys.render(
                     f"CALIBRATING: {registry.training_timer // 60}s",
                     True,
-                    (0, 255, 255),
+                    COLORS['BRAWL_PURPLE'],
                 ),
                 (350, 20),
             )
@@ -453,7 +488,7 @@ def update(screen, registry):
             screen.blit(alpha_surface, (0, 0))
 
             game_over_font = pygame.font.SysFont("Arial", 60, bold=True)
-            game_over_text = game_over_font.render("YOU DIED!", True, (255, 200, 0))
+            game_over_text = game_over_font.render("YOU DIED!", True, COLORS['SUPERCELL_GOLD'])
             text_rect = game_over_text.get_rect(center=(400, 250))
             screen.blit(game_over_text, text_rect)
 
