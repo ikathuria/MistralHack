@@ -2,6 +2,7 @@
 GAME_CODE_PATH = "game/"
 GAME_LOGIC_PATH = GAME_CODE_PATH + "game_logic.py"
 GAME_LOGIC_BACKUP_PATH = GAME_CODE_PATH + "game_logic_backup.py"
+GAME_LOGIC_ORIGINAL_PATH = GAME_CODE_PATH + "game_logic_original.py"
 GAME_CONSTANTS_PATH = GAME_CODE_PATH + "constants.py"
 
 # prompt for the refactor bot

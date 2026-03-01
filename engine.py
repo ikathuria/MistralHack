@@ -2,6 +2,7 @@ import os
 import random
 import importlib
 import threading
+import shutil
 import pygame
 
 import app.coder as coder
@@ -11,10 +12,17 @@ from utils.utils import clean_ai_code
 from utils.constants import (
     GAME_LOGIC_PATH,
     GAME_LOGIC_BACKUP_PATH,
+    GAME_LOGIC_ORIGINAL_PATH,
 )
 
 import game.game_logic as game_logic  # vibe file
 from game.constants import GlobalRegistry
+
+###########################################################################################
+# Initialize Original Backup if not exists
+if not os.path.exists(GAME_LOGIC_ORIGINAL_PATH):
+    shutil.copy(GAME_LOGIC_PATH, GAME_LOGIC_ORIGINAL_PATH)
+    print(f"Created base backup: {GAME_LOGIC_ORIGINAL_PATH}")
 
 ###########################################################################################
 pygame.init()
@@ -23,7 +31,6 @@ clock = pygame.time.Clock()
 
 # constant game registry that survives hot reloads
 registry = GlobalRegistry()
-
 ###########################################################################################
 
 
@@ -114,6 +121,9 @@ if __name__ == "__main__":
 
             # get user command via voice - TOGGLE MODE
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                if not registry.game_started:
+                    continue
+
                 if not registry.is_recording:
                     # START RECORDING
                     if registry.player.mana < 10:
@@ -209,6 +219,14 @@ if __name__ == "__main__":
                             target=narrator.announce_vibe_shift,
                             args=("Reality stabilized.",),
                         ).start()
+
+        # 4. Check for logic reset
+        if registry.needs_reload:
+            registry.needs_reload = False
+            print("Restoring original game logic...")
+            shutil.copy(GAME_LOGIC_ORIGINAL_PATH, GAME_LOGIC_PATH)
+            importlib.reload(game_logic)
+            registry.combat_log.append("Architect: REALITY RESTORED TO BASELINE.")
 
         # regular game update
         # logic handles player movement, map rendering, and NPCs

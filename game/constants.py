@@ -27,7 +27,16 @@ class Character:
 
 class Player(Character):
     def __init__(
-        self, name, x, y, size, sprite, health=100, max_health=100, speed=0.0, dialogue=""
+        self,
+        name,
+        x,
+        y,
+        size,
+        sprite,
+        health=100,
+        max_health=100,
+        speed=0.0,
+        dialogue="",
     ):
         super().__init__(name, x, y, size, sprite, health, max_health, speed, dialogue)
         self.inventory = []
@@ -44,6 +53,8 @@ class GlobalRegistry:
     """
 
     def __init__(self):
+        self.game_started = False
+        self.needs_reload = False
         # narrative log
         self.is_recording = False
         self.log = [

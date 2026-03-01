@@ -11,8 +11,9 @@ BG_TILE_SIZE = 64
 ARENA_SIZE = (2000, 2000)
 background_surface = None
 
-if 'player_class' not in globals():
+if "player_class" not in globals():
     player_class = None
+
 
 def generate_background():
     """Tiles the background surface once at start-up."""
@@ -33,6 +34,7 @@ def generate_background():
         print(f"Background gen error: {e}")
         if background_surface:
             background_surface.fill((20, 60, 20))
+
 
 def load_assets():
     """Loads game assets, ensuring pygame is initialized first."""
@@ -67,10 +69,12 @@ def load_assets():
         except:
             ASSETS = {}
 
+
 def clear_enemies(registry):
     """Clears dynamic entities like training orbs and spells."""
     registry.training_orbs = []
     registry.player.spells = []
+
 
 def randomize_positions(registry):
     """Randomly places entities on empty tiles."""
@@ -89,6 +93,7 @@ def randomize_positions(registry):
             npc.x, npc.y = empty_tiles.pop()
         registry.villain.x, registry.villain.y = empty_tiles.pop()
 
+
 def check_collision(x, y, registry):
     grid_x, grid_y = int(x // registry.tile_size), int(y // registry.tile_size)
     if 0 <= grid_y < len(registry.world_map) and 0 <= grid_x < len(
@@ -97,6 +102,7 @@ def check_collision(x, y, registry):
         return registry.world_map[grid_y][grid_x] == 1
     return True
 
+
 def draw_sprite(screen, sprite_key, x, y, size, camera_offset=(0, 0)):
     rx, ry = x - camera_offset[0], y - camera_offset[1]
     if sprite_key in ASSETS:
@@ -104,13 +110,14 @@ def draw_sprite(screen, sprite_key, x, y, size, camera_offset=(0, 0)):
         rect = img.get_rect(center=(rx, ry))
         screen.blit(img, rect)
     else:
-        color = COLORS['SUPERCELL_GOLD'] if sprite_key == "mage" else (0, 150, 255)
+        color = COLORS["SUPERCELL_GOLD"] if sprite_key == "mage" else (0, 150, 255)
         pygame.draw.circle(screen, color, (int(rx), int(ry)), size // 2)
+
 
 def draw_ui(screen, registry):
     # stats bar
     pygame.draw.rect(screen, (20, 20, 20), (20, 20, 300, 80))
-    pygame.draw.rect(screen, COLORS['SUPERCELL_GOLD'], (20, 20, 300, 80), 2)
+    pygame.draw.rect(screen, COLORS["SUPERCELL_GOLD"], (20, 20, 300, 80), 2)
 
     font = pygame.font.SysFont("Arial", 16, bold=True)
     # health
@@ -130,12 +137,12 @@ def draw_ui(screen, registry):
 
     # inventory / sigils
     sigils_text = f"SIGILS: {len(registry.player.inventory)}/3"
-    screen.blit(font.render(sigils_text, True, COLORS['SUPERCELL_GOLD']), (30, 75))
+    screen.blit(font.render(sigils_text, True, COLORS["SUPERCELL_GOLD"]), (30, 75))
 
     # dialogue log
     log_rect = pygame.Rect(0, 500, 800, 100)
     pygame.draw.rect(screen, (10, 10, 10), log_rect)
-    pygame.draw.line(screen, COLORS['SUPERCELL_GOLD'], (0, 500), (800, 500), 3)
+    pygame.draw.line(screen, COLORS["SUPERCELL_GOLD"], (0, 500), (800, 500), 3)
     font_log = pygame.font.SysFont("Consolas", 16)
     for i, msg in enumerate(registry.combat_log[-4:]):
         screen.blit(
@@ -152,11 +159,79 @@ def draw_ui(screen, registry):
         rec_txt = font_rec.render("VOICE RECORDING...", True, (255, 50, 50))
         screen.blit(rec_txt, (420, 30))
 
+
+def draw_start_screen(screen, registry):
+    """Displays the game controls and objectives."""
+    overlay = pygame.Surface((800, 600), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 220))
+    screen.blit(overlay, (0, 0))
+
+    title_font = pygame.font.SysFont("Arial", 50, bold=True)
+    header_font = pygame.font.SysFont("Arial", 28, bold=True)
+    body_font = pygame.font.SysFont("Arial", 20)
+
+    # Title
+    title = title_font.render(
+        "MISTRAL HACK: REALITY SHIFT", True, COLORS["SUPERCELL_GOLD"]
+    )
+    screen.blit(title, (400 - title.get_width() // 2, 80))
+
+    # Controls
+    controls_y = 180
+    screen.blit(
+        header_font.render("CONTROLS:", True, (255, 255, 255)), (100, controls_y)
+    )
+    controls = [
+        "ARROW KEYS: Move your Brawler",
+        "SPACEBAR: Hold to Record Voice / Toggle Mistral Refactor",
+        "E KEY: Interact with NPCs / Start Training",
+        "R KEY: Reset Game (on Win/Loss)",
+    ]
+    for i, line in enumerate(controls):
+        screen.blit(
+            body_font.render(line, True, (200, 200, 200)),
+            (120, controls_y + 40 + i * 30),
+        )
+
+    # Goal
+    goal_y = 360
+    screen.blit(header_font.render("OBJECTIVE:", True, (255, 255, 255)), (100, goal_y))
+    goal_lines = [
+        "1. Talk to the Elder and Guard to earn Sigils.",
+        "2. Find the hidden sigil using the hidden voice command.",
+        "3. Once the barrier falls, defeat Lillith with Voice Spells!",
+    ]
+    for i, line in enumerate(goal_lines):
+        screen.blit(
+            body_font.render(line, True, (200, 200, 200)), (120, goal_y + 40 + i * 30)
+        )
+
+    # Start Prompt
+    start_txt = header_font.render(
+        "PRESS ENTER TO BEGIN YOUR QUEST", True, COLORS["SUPERCELL_GOLD"]
+    )
+    if (pygame.time.get_ticks() // 500) % 2 == 0:
+        screen.blit(start_txt, (400 - start_txt.get_width() // 2, 520))
+
+
 def update(screen, registry):
     try:
         global background_surface, player_class
         if background_surface is None:
             generate_background()
+
+        keys = pygame.key.get_pressed()
+
+        # Start Screen Logic
+        if not registry.game_started:
+            if background_surface:
+                screen.blit(background_surface, (0, 0))
+            else:
+                screen.fill((10, 25, 10))
+            draw_start_screen(screen, registry)
+            if keys[pygame.K_RETURN]:
+                registry.game_started = True
+            return
 
         if not ASSETS:
             load_assets()
@@ -289,7 +364,7 @@ def update(screen, registry):
 
                 pygame.draw.circle(
                     screen,
-                    COLORS['BRAWL_PURPLE'],
+                    COLORS["BRAWL_PURPLE"],
                     (int(orb["x"] - cam_x), int(orb["y"] - cam_y)),
                     10,
                 )
@@ -367,7 +442,7 @@ def update(screen, registry):
                 font_v.render(
                     f"BARRIER: {int(registry.lillith_barrier_strength)}%",
                     True,
-                    COLORS['BRAWL_PURPLE'],
+                    COLORS["BRAWL_PURPLE"],
                 ),
                 (barrier_rx - 40, barrier_ry + 110),
             )
@@ -399,7 +474,7 @@ def update(screen, registry):
                 spell["y"] += spell.get("vy", 0)
                 pygame.draw.circle(
                     screen,
-                    spell.get("color", COLORS['SUPERCELL_GOLD']),
+                    spell.get("color", COLORS["SUPERCELL_GOLD"]),
                     (int(spell["x"] - cam_x), int(spell["y"] - cam_y)),
                     spell.get("size", 10),
                 )
@@ -440,7 +515,7 @@ def update(screen, registry):
                 f_sys.render(
                     f"CALIBRATING: {registry.training_timer // 60}s",
                     True,
-                    COLORS['BRAWL_PURPLE'],
+                    COLORS["BRAWL_PURPLE"],
                 ),
                 (350, 20),
             )
@@ -478,6 +553,7 @@ def update(screen, registry):
                 registry.player.inventory = []
                 registry.player.x = 400
                 registry.player.y = 300
+                registry.needs_reload = True
                 randomize_positions(registry)
 
         # game over
@@ -488,7 +564,9 @@ def update(screen, registry):
             screen.blit(alpha_surface, (0, 0))
 
             game_over_font = pygame.font.SysFont("Arial", 60, bold=True)
-            game_over_text = game_over_font.render("YOU DIED!", True, COLORS['SUPERCELL_GOLD'])
+            game_over_text = game_over_font.render(
+                "YOU DIED!", True, COLORS["SUPERCELL_GOLD"]
+            )
             text_rect = game_over_text.get_rect(center=(400, 250))
             screen.blit(game_over_text, text_rect)
 
@@ -510,6 +588,7 @@ def update(screen, registry):
                 registry.player.inventory = []
                 registry.player.x = 400
                 registry.player.y = 300
+                registry.needs_reload = True
                 randomize_positions(registry)
 
     except Exception as e:
