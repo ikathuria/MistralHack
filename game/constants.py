@@ -5,18 +5,27 @@ class GlobalRegistry:
     """
 
     def __init__(self):
-        self.score = 0
-
+        # player state
         self.current_sprite = 'scout'
-        self.player_health = 100
-        self.max_health = 100
         self.player_x = 400
         self.player_y = 300
 
+        self.score = 0
+        self.player_level = 1
+        self.player_health = 100
+        self.max_health = 100
+        self.mana = 100
+
+        self.attacks = []  # Persistent list of active projectiles/spells
+
+        # enemy state
         self.enemies = []
         self.max_enemies = 10
 
         self.time_dilation = 1.0
+
+        # combat log for narrative flavor
+        self.combat_log = ["The Architect watches your first move..."]
 
 
 # Supercell Official Palette (Brawl Stars Inspired)
