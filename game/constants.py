@@ -1,3 +1,19 @@
+import random
+
+
+class Character:
+
+    def __init__(self, name, x, y, size, sprite, health, max_health, dialogue=""):
+        self.name = name
+        self.x = x
+        self.y = y
+        self.size = size
+        self.sprite = sprite
+        self.health = health
+        self.max_health = max_health
+        self.dialogue = dialogue
+
+
 class GlobalRegistry:
     """
     Architectural Mod: A persistent state container that survives
@@ -5,16 +21,67 @@ class GlobalRegistry:
     """
 
     def __init__(self):
-        # player state
-        self.current_sprite = "scout"
-        self.player_x = 400
-        self.player_y = 300
+        # narrative log
+        self.is_recording = False
+        self.log = [
+            "Welcome to the Reality-Shift RPG. Press SPACE to whisper to the Architect."
+        ]
+        self.combat_log = self.log  # Keep for backward compatibility
 
-        self.score = 0
-        self.player_level = 1
-        self.player_health = 100
-        self.max_health = 100
+        # Quest & State Extensions
+        self.quest_stage = 0
+        self.inventory = []
         self.mana = 100
+        self.can_cast_ult = False
+
+        # Architect's Sight
+        self.hidden_sigil_revealed = False
+        self.hidden_sigil_pos = (random.randint(100, 1400), random.randint(100, 900))
+
+        # player state
+        self.score = 0
+        self.player = Character("Player", 400, 300, 40, "scout", 100, 100, speed=5.0)
+
+        # Reflex Calibration (Guard's Mini-game)
+        self.training_active = False
+        self.training_timer = 0
+        self.training_orbs = []
+        self.training_sessions = 0
+
+        # NPC state
+        self.npcs = [
+            Character(
+                "Elder",
+                200,
+                200,
+                40,
+                "mage",
+                100,
+                100,
+                speed=0.0,
+                dialogue="Find the three Sigils of Truth to weaken her shield.",
+            ),
+            Character(
+                "Guard",
+                600,
+                400,
+                40,
+                "tank",
+                100,
+                100,
+                speed=0.0,
+                dialogue="Train hard. Lillith's barrier is no joke.",
+            ),
+        ]
+
+        # Antagonist state
+        self.villain = Character(
+            "Lillith", 1200, 500, 60, "lillith", 100, 100, speed=2.5
+        )
+        self.lillith_barrier_strength = 100.0
+
+        # Boss Fight & Spells
+        self.spells = []  # Active player spells
 
         # World State (Larger Roaming Arena)
         self.world_map = [
@@ -31,50 +98,10 @@ class GlobalRegistry:
         ]
         self.tile_size = 100
 
-        # Quest & State
-        self.quest_stage = 0
-        self.inventory = [] # List of Sigils
-        self.mana = 100
-        self.lillith_barrier_strength = 100.0
-        
         # Visual FX
-        self.screen_shake = 0
-        self.pops = [] # Temporary pop effects on kill
-
-        # NPC state
-        self.npcs = [
-            {
-                'name': 'Elder',
-                'x': 200,
-                'y': 200,
-                'sprite': 'mage',
-                'dialogue': "Find the three Sigils of Truth to weaken her shield."
-            },
-            {
-                'name': 'Guard',
-                'x': 600,
-                'y': 400,
-                'sprite': 'tank',
-                'dialogue': "Train hard. Lillith's barrier is no joke."
-            }
-        ]
-
-        # Antagonist state
-        self.villain = {
-            'name': 'Lillith',
-            'x': 1200,
-            'y': 500,
-            'size': 60,
-            'sprite': 'lillith'
-        }
-
         self.time_dilation = 1.0
-
-        # narrative log
-        self.log = [
-            "Welcome to the Reality-Shift RPG. Press SPACE to whisper to the Architect."
-        ]
-        self.combat_log = self.log  # Keep for backward compatibility
+        self.screen_shake = 0
+        self.pops = []
 
 
 # Supercell Official Palette (Brawl Stars Inspired)

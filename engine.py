@@ -112,44 +112,103 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 running = False
 
-            # get user command via voice
+            # get user command via voice - TOGGLE MODE
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                if registry.mana < 20:
-                    registry.combat_log.append(
-                        "Architect: Your mana is too low to shift reality."
-                    )
-                    narrator.announce_vibe_shift("Mana depleted, Brawler.")
-                    continue
+                if not registry.is_recording:
+                    # START RECORDING
+                    if registry.mana < 20:
+                        registry.combat_log.append(
+                            "Architect: Your mana is too low to shift reality."
+                        )
+                        narrator.announce_vibe_shift("Mana depleted, Brawler.")
+                        continue
 
-                user_command = narrator.record_and_transcribe(duration=4)
-
-                if user_command:
-                    # Deduct mana
+                    registry.is_recording = True
                     registry.mana -= 20
-                    registry.screen_shake = 60  # Start shake
-
-                    with open(GAME_LOGIC_PATH, "r") as f:
-                        current_code = f.read()
-
-                    # update code logic
-                    raw_new_code = get_streaming_vibe(
-                        user_command, current_code, screen
+                    registry.combat_log.append(
+                        "Architect: LISTENING... (Press Space again to finish)"
                     )
-                    success = apply_new_vibe(raw_new_code)
+                    narrator.start_recording()
+                else:
+                    # STOP AND PROCESS
+                    registry.is_recording = False
+                    user_command = (narrator.stop_and_transcribe() or "").lower()
 
-                    if success:
-                        registry.combat_log.append(
-                            f"Architect: Shifted {user_command}."
-                        )
-                    else:
-                        registry.combat_log.append(
-                            "Architect: Reality reject. Glitch detected."
-                        )
+                    if user_command:
+                        registry.screen_shake = 60  # Start shake
 
-                    threading.Thread(
-                        target=narrator.announce_vibe_shift,
-                        args=("Reality stabilized.",),
-                    ).start()
+                        # 1. Special Quest Command: Pulse of Truth
+                        is_special = False
+                        for word in ["pulse", "truth", "reveal"]:
+                            if word in user_command:
+                                registry.hidden_sigil_revealed = True
+                                registry.combat_log.append(
+                                    "Architect: REALITY PULSING... The hidden is revealed."
+                                )
+                                narrator.announce_vibe_shift(
+                                    "The veil is thin, Brawler."
+                                )
+                                is_special = True
+                                break
+                        if is_special:
+                            continue
+
+                        # 2. Boss Phase Spells
+                        if registry.lillith_barrier_strength <= 0:
+                            spell_type = "arcane"
+                            color = (100, 100, 255)
+                            if "lightning" in user_command or "bolt" in user_command:
+                                spell_type, color = "lightning", (255, 255, 0)
+                            elif "ice" in user_command or "freeze" in user_command:
+                                spell_type, color = "ice", (100, 255, 255)
+                            elif "fire" in user_command or "burn" in user_command:
+                                spell_type, color = "fire", (255, 100, 0)
+
+                            dx, dy = (
+                                registry.villain["x"] - registry.player_x,
+                                registry.villain["y"] - registry.player_y,
+                            )
+                            n = max(1, (dx**2 + dy**2) ** 0.5)
+                            registry.spells.append(
+                                {
+                                    "x": registry.player_x,
+                                    "y": registry.player_y,
+                                    "vx": (dx / n) * 8,
+                                    "vy": (dy / n) * 8,
+                                    "color": color,
+                                    "size": 15,
+                                    "life": 120,
+                                    "type": spell_type,
+                                }
+                            )
+                            registry.combat_log.append(
+                                f"Architect: CASTING {spell_type.upper()}!"
+                            )
+                            narrator.announce_vibe_shift(f"Feel the {spell_type}!")
+                            continue
+
+                        # 3. Regular Vibe Shift
+                        with open(GAME_LOGIC_PATH, "r") as f:
+                            current_code = f.read()
+
+                        raw_new_code = get_streaming_vibe(
+                            user_command, current_code, screen
+                        )
+                        success = apply_new_vibe(raw_new_code)
+
+                        if success:
+                            registry.combat_log.append(
+                                f"Architect: Shifted {user_command}."
+                            )
+                        else:
+                            registry.combat_log.append(
+                                "Architect: Reality reject. Glitch detected."
+                            )
+
+                        threading.Thread(
+                            target=narrator.announce_vibe_shift,
+                            args=("Reality stabilized.",),
+                        ).start()
 
         # regular game update
         # logic handles player movement, map rendering, and NPCs
