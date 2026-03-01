@@ -29,8 +29,8 @@ STRICT RULES:
 """
 
 # mistral code model
-MISTRAL_MODEL = "devstral-small-latest"
+MISTRAL_MODEL = "devstral-medium-latest"
 
 # voice-to-text
 ELEVENLABS_MODEL_V2T = "scribe_v2"
-ELEVENLABS_MODEL_T2V = "eleven_flash_v2_5"
+ELEVENLABS_MODEL_T2V = "eleven_turbo_v2_5"
