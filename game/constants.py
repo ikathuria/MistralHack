@@ -55,6 +55,7 @@ class GlobalRegistry:
     def __init__(self):
         self.game_started = False
         self.needs_reload = False
+        self.log_scroll = 0
         # narrative log
         self.is_recording = False
         self.log = [

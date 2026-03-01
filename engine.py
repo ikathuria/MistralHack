@@ -116,6 +116,13 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 running = False
 
+            # Scroll log
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 4:  # Scroll Up
+                    registry.log_scroll += 1
+                elif event.button == 5:  # Scroll Down
+                    registry.log_scroll -= 1
+
             # get user command via voice - TOGGLE MODE
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 if not registry.game_started:

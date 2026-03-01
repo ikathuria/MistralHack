@@ -114,6 +114,23 @@ def draw_sprite(screen, sprite_key, x, y, size, camera_offset=(0, 0)):
         pygame.draw.circle(screen, color, (int(rx), int(ry)), size // 2)
 
 
+def wrap_text(text, font, max_width):
+    """Wraps text into multiple lines based on width."""
+    words = text.split(" ")
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_line = current_line + word + " "
+        if font.size(test_line)[0] < max_width:
+            current_line = test_line
+        else:
+            lines.append(current_line.strip())
+            current_line = word + " "
+    lines.append(current_line.strip())
+    return lines
+
+
 def draw_ui(screen, registry):
     # stats bar
     pygame.draw.rect(screen, (20, 20, 20), (20, 20, 300, 80))
@@ -143,11 +160,36 @@ def draw_ui(screen, registry):
     log_rect = pygame.Rect(0, 500, 800, 100)
     pygame.draw.rect(screen, (10, 10, 10), log_rect)
     pygame.draw.line(screen, COLORS["SUPERCELL_GOLD"], (0, 500), (800, 500), 3)
+
     font_log = pygame.font.SysFont("Consolas", 16)
-    for i, msg in enumerate(registry.combat_log[-4:]):
-        screen.blit(
-            font_log.render(f"> {msg}", True, (200, 200, 200)), (20, 510 + i * 20)
-        )
+    all_wrapped_lines = []
+    for msg in registry.combat_log:
+        wrapped = wrap_text(f"> {msg}", font_log, 760)
+        all_wrapped_lines.extend(wrapped)
+
+    # Auto-scroll to bottom if new messages added (if not already scrolling)
+    if not hasattr(registry, "_last_log_len"):
+        registry._last_log_len = len(all_wrapped_lines)
+
+    if len(all_wrapped_lines) > registry._last_log_len:
+        registry.log_scroll = 0
+        registry._last_log_len = len(all_wrapped_lines)
+
+    # Calculate visible lines based on scroll
+    visible_lines = 4
+    total_lines = len(all_wrapped_lines)
+
+    # ensure scroll is within bounds
+    max_scroll = max(0, total_lines - visible_lines)
+    registry.log_scroll = max(0, min(registry.log_scroll, max_scroll))
+
+    start_idx = total_lines - visible_lines - registry.log_scroll
+    start_idx = max(0, start_idx)
+
+    display_lines = all_wrapped_lines[start_idx : start_idx + visible_lines]
+
+    for i, line in enumerate(display_lines):
+        screen.blit(font_log.render(line, True, (200, 200, 200)), (20, 510 + i * 20))
 
     # recording indicator
     if registry.is_recording:
