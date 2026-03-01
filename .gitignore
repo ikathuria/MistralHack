@@ -6,6 +6,7 @@
 # User-specific game files
 test.*
 game_logic_backup.py
+game_logic_original.py
 
 # User-specific files
 *.rsuser
