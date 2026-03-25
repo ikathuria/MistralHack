@@ -421,3 +421,26 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+*.mzp
+
+# Next.js
+.next/
+out/
+build/
+
+# Audio / Temp Recording files
+*.wav
+*.webm
+*.mp3
+recording.wav
+tmp*
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db

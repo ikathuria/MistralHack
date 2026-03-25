@@ -63,6 +63,9 @@ class GlobalRegistry:
         ]
         self.combat_log = self.log  # Keep for backward compatibility
 
+        # day/night cycle
+        self.day_cycle_ms = 180000  # 3 minutes
+
         # quest & state extensions
         self.quest_stage = 0
 

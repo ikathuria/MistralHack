@@ -283,6 +283,17 @@ def update(screen, registry):
 
         keys = pygame.key.get_pressed()
 
+        # --- DAY/NIGHT CYCLE LOGIC ---
+        import math
+
+        current_ticks = pygame.time.get_ticks()
+        # offset by -pi/2 to start at sin(-pi/2) = -1 ( Noon -> darkness=0 )
+        time_factor = math.sin(
+            (current_ticks / registry.day_cycle_ms) * 2 * math.pi - math.pi / 2
+        )
+        # darkness: 0.0 (noon) to 1.0 (midnight)
+        darkness = (time_factor + 1) / 2
+
         # Use pre-rendered background based on camera
         cam_x = registry.player.x - 400
         cam_y = registry.player.y - 300
@@ -303,6 +314,23 @@ def update(screen, registry):
             screen.blit(background_surface, (-cam_x, -cam_y))
         else:
             screen.fill((10, 25, 10))
+
+        # --- APPLY NIGHT VISUALS ---
+        if darkness > 0.1:
+            overlay = pygame.Surface((800, 600), pygame.SRCALPHA)
+            night_color = (0, 0, 40, int(150 * darkness))
+            overlay.fill(night_color)
+            screen.blit(overlay, (0, 0))
+
+        if darkness > 0.7:
+            for i in range(25):
+                random.seed(i * 123)
+                sx = random.randint(0, 800)
+                sy = random.randint(0, 500)
+                star_size = random.randint(1, 3)
+                alpha = int(255 * (0.5 + 0.5 * math.sin(current_ticks * 0.005 + i)))
+                pygame.draw.circle(screen, (255, 255, 255, alpha), (sx, sy), star_size)
+        # -----------------------------
 
         # draw map walls with camera (only tile == 1)
         for r, row in enumerate(registry.world_map):
