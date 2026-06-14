@@ -34,18 +34,29 @@ function Slider({ cfg, base, value, onChange }: {
   onChange: (v: number) => void;
 }) {
   const delta = value - base;
-  const deltaStr = delta === 0 ? '' : (delta > 0 ? `+${delta.toFixed(cfg.step < 1 ? 1 : 0)}` : delta.toFixed(cfg.step < 1 ? 1 : 0));
+  const decimals = cfg.step < 1 ? 1 : 0;
+  const deltaStr = delta === 0 ? '' : (delta > 0 ? `+${delta.toFixed(decimals)}` : delta.toFixed(decimals));
   const deltaColor = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : '#6b7280';
 
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <span style={{ fontSize: 12, color: '#9ca3af' }}>{cfg.label}</span>
-        <span style={{ fontSize: 12 }}>
-          <span style={{ fontWeight: 600 }}>{value.toFixed(cfg.step < 1 ? 1 : 0)}</span>
-          <span style={{ color: '#6b7280' }}> {cfg.unit}</span>
-          {deltaStr && <span style={{ marginLeft: 6, color: deltaColor, fontSize: 11 }}>{deltaStr}</span>}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#f1f5f9' }}>
+            {value.toFixed(decimals)}
+          </span>
+          <span style={{ fontSize: 11, color: '#4b5563' }}>{cfg.unit}</span>
+          {deltaStr && (
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: deltaColor,
+              background: delta > 0 ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+              padding: '1px 5px', borderRadius: 4,
+            }}>
+              {deltaStr}
+            </span>
+          )}
+        </div>
       </div>
       <input
         type="range"
@@ -54,7 +65,6 @@ function Slider({ cfg, base, value, onChange }: {
         step={cfg.step}
         value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ width: '100%', accentColor: '#6366f1' }}
       />
     </div>
   );
@@ -73,9 +83,7 @@ export default function PolicyEditor({ baseIndicators, basePolicies }: Props) {
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-        Indicators
-      </div>
+      <div className="section-label" style={{ marginBottom: 12 }}>Indicators</div>
 
       {INDICATOR_SLIDERS.map(cfg => (
         <Slider
@@ -87,9 +95,7 @@ export default function PolicyEditor({ baseIndicators, basePolicies }: Props) {
         />
       ))}
 
-      <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, marginTop: 16 }}>
-        Policies
-      </div>
+      <div className="section-label" style={{ marginBottom: 12, marginTop: 18 }}>Policies</div>
 
       {POLICY_SLIDERS.map(cfg => (
         <Slider

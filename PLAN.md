@@ -1,16 +1,18 @@
 # RealityShift — Living World Policy Simulator
 
-> A persistent multi-agent world simulation where AI agents run every country based on real history. Players can fork the simulation, take over any country, and watch the rest of the world react — creating a true parallel universe with no new real-world data injected.
+> A persistent multi-agent world simulation where AI agents run every country based on real history. Players can fork the simulation, take over any country, and watch the rest of the world react — a true parallel universe with no new real-world data injected.
 
 ---
 
 ## Concept
 
-**Two modes, one shared world state:**
+**Two modes, one shared world state.**
 
-**Simulation mode (always on):** One AI agent per country runs continuously. Each agent is trained on 10–20 years of their country's real history and makes decisions autonomously. Once a month, agents receive the latest real-world news, compare their simulated state to reality, self-correct where needed, and publish divergence reports publicly — a living record of alternate history.
+**Simulation mode (always on):** One AI agent per country runs continuously, grounded in 10–20 years of its country's real history. Periodically the live world ingests real news, compares its simulated state to reality, self-corrects, and publishes **divergence reports** publicly — a living record of alternate history.
 
-**Game mode (player-triggered):** A player picks any country, takes over from its agent, and the world forks. From that moment, no new real-world data enters the fork. The player makes decisions manually; every other country's agent reacts to those decisions in real time. The fork is a true parallel universe.
+**Game mode (player-triggered):** A player picks any country, takes over from its agent, and the world **forks**. From that moment no new real-world data enters the fork. The player decides manually; every other country's agent reacts in real time.
+
+Full product detail: [docs/01-product-overview.md](docs/01-product-overview.md).
 
 ---
 
@@ -18,276 +20,263 @@
 
 | | |
 |---|---|
-| **Market** | Nothing like this exists. Democracy 4, Power & Revolution, NationStates — all are either single-player sandboxes with no real persistence, no AI agents, or no multi-country simulation. The "living world + fork to play" concept is entirely novel. |
-| **Feasibility** | Very hard — persistent multi-agent coordination, monthly news injection, divergence tracking, and a real-time game layer are each substantial systems. Correct phasing (simulation first, game layer second) makes it tractable. |
-| **Free to build** | Mostly — Supabase free tier (Postgres + pgvector), Cloudflare Workers free tier (cron + agent proxy), World Bank API (free), NewsAPI (free tier: 100 requests/day). Claude API is the main cost (~$20–50/month for background agents). |
-| **Monetization** | Open source — community-built. No revenue goal. |
+| **Market** | crowded-with-gap — AI-driven grand strategy now exists commercially (Pax Historia, YC, ~35k DAU), but **no one** runs a *persistent shared world* with *divergence-vs-reality* tracking. |
+| **Feasibility** | hard — persistent multi-agent coordination across ~195 countries within free-tier LLM limits. Largely **already built** (Milestones 1–10). |
+| **Free to build** | mostly — Groq / Supabase / Cloudflare / GitHub free tiers cover it, with two operational gotchas (see Risks). |
+| **Monetization** | portfolio / open-source — not applicable. |
 
 ---
 
-## Architecture Overview
+## Research Findings
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    SIMULATION LAYER (always on)              │
-│                                                             │
-│  Country Agent × N  ──→  Supabase (world state, history)   │
-│       ↑ monthly                  ↓                          │
-│   News API / web             Divergence Reports             │
-│                                  ↓                          │
-│                          Public Dashboard (read-only)        │
-└─────────────────────────────────────────────────────────────┘
-                              ↓  fork on player join
-┌─────────────────────────────────────────────────────────────┐
-│                      GAME LAYER (per fork)                   │
-│                                                             │
-│  Human Player ──→ Policy changes ──→ Agent reactions        │
-│                         (no new real-world data injected)   │
-│                         (fork lives in Supabase as          │
-│                          a separate world_id branch)        │
-└─────────────────────────────────────────────────────────────┘
-```
+Full report: [RESEARCH.md](RESEARCH.md) (quick pass, 2026-06-13).
+
+### Competitors
+
+| Name | Pricing | Strength | Limitations | User complaints |
+|---|---|---|---|---|
+| **Pax Historia** (YC) | Freemium/token (not public) | AI powers other countries' reactions; ~35k DAU; 4,000+ presets | Per-player sandbox, **not** a persistent shared world; no reality-divergence tracking | none surfaced (quick pass) |
+| **WarAgent** (open source) | Free | LLM multi-agent sim of historical wars | Research artifact, not a playable product | n/a |
+| **Geo-Political Simulator / Rulers of Nations** | Paid | Deep country modeling | Scripted AI, single-player, no LLM | Steep learning curve, dated UI |
+| **Democracy 4** | Paid (~$27) | Best-in-class policy depth | Single-player, scripted, no live world | Static/predictable AI |
+| **NationStates / Politics & War** | Free | Large communities | No AI agents | Shallow simulation |
+
+**Positioning:** crowded-with-gap. The wedge is the **combination** of (1) a persistent always-on shared world and (2) public divergence reports vs. real news. "AI runs the other countries" is **no longer** a differentiator — Pax Historia owns it. The earlier "nothing like this exists" framing is retired.
+
+### Feasibility
+- **Hardest part:** keeping ~195 country agents coherent over many simulated months within free-tier LLM rate limits, plus the monthly news→compare→self-correct→divergence loop. **Approach:** one country per Worker invocation, GitHub Actions orchestrating the loop, single `ai/llm.ts` wrapper over Groq (Claude-swappable). Already implemented.
+- **Cost flags:** Supabase free projects **pause after ~1 week of inactivity** (monthly cron leaves a longer gap → needs a weekly keep-alive ping); NewsAPI free is **~100 req/day** < 195 countries (batch over two days or swap source).
+
+### Monetization
+Portfolio / open-source — not applicable. The community knowledge base (`periods.json`, `country_histories.json`) is the contribution magnet; the public divergence dashboard is the organic-growth surface. If ever needed, donations/sponsorship only — never gate the simulation.
+
+---
+
+## Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Supabase free project pauses between monthly syncs | high | high | Weekly keep-alive ping (cheap GitHub Action hitting a read endpoint) — task in M11 |
+| NewsAPI free quota (100/day) < 195 countries | high | med | Batch sync across two days, or swap to a freer news source behind `fetchNews.ts` |
+| Groq free tier TPM/RPD throttling or model retirement | med | med | One `ai/llm.ts` wrapper → swap model/provider (Claude) with a config change |
+| Pax Historia / a funded competitor adds reality-divergence | low | high | Move first on the divergence dashboard; it's the defensible content angle |
+| pgvector + per-country embeddings exceed 500 MB free DB | low | med | Keep embeddings to historical periods only; prune if scaled |
+| Long-run simulation drift (agents become incoherent) | med | med | Monthly divergence self-correction is the validation + correction loop |
 
 ---
 
 ## Tech Stack
 
-| Layer | Choice | Reason |
-|---|---|---|
-| Frontend | Vite + React + TypeScript | Browser game, fast HMR, CesiumJS compatible |
-| 3D Globe | CesiumJS (Apache 2.0) | WebGL globe, GeoJSON country support, real geo tiles |
-| State (client) | Zustand | Lightweight real-time game state |
-| Agent Backend | Cloudflare Workers | Free tier, proxies Claude API; individual invocations stay within the 10ms CPU / 30s wall-clock limits |
-| Monthly Sync Scheduler | GitHub Actions (scheduled workflow) | Completely free, generous execution time — orchestrates the monthly sync by calling the Worker once per country in sequence |
-| Database | Supabase (Postgres + pgvector) | Persistent world state, agent memory, divergence logs, fork branching |
-| Auth | Supabase Auth | Players need accounts to save forks and game sessions |
-| Country Data | World Bank API + REST Countries API | Free, 200+ countries, 1400+ indicators — seeds initial agent state |
-| News (monthly sync) | NewsAPI.org free tier | Real-world news injection for monthly agent self-correction |
-| Historical Knowledge | Curated `periods.json` + pgvector embeddings | RAG source for historical grounding in agent decisions |
-| AI Model | Groq — Llama 4 Maverick | Free forever, no credit card; 1k req/day free tier; OpenAI-compatible API so swapping to Claude is a one-line config change if needed |
-| Hosting | GitHub Pages (frontend) + Cloudflare Workers (agents + API) | Both free |
-| Public Dashboard | Same frontend, read-only route `/world` | Shows live simulation state and divergence reports |
+> Versions are the installed (caret-pinned) versions verified on 2026-06-13. Re-check official docs before coding against any library. Use the installed `supabase` skill for database work.
+
+| Layer | Choice | Version | Reason |
+|---|---|---|---|
+| Frontend | Vite + React + TypeScript | vite ^8.0.12 · react ^19.2.6 · typescript ~6.0.2 | Browser game, fast HMR, CesiumJS-compatible |
+| 3D Globe | CesiumJS + vite-plugin-cesium | cesium ^1.141.0 · plugin ^1.2.23 | WebGL globe, GeoJSON countries, real geo tiles |
+| Client state | Zustand | ^5.0.13 | Lightweight real-time game state |
+| Routing | react-router-dom | ^7.15.1 | `/` game + `/world` dashboard |
+| Agent backend | Cloudflare Workers (Wrangler) | wrangler ^4.90.1 | Free tier; only place LLM keys live |
+| Database | Supabase (Postgres + pgvector) | @supabase/supabase-js ^2.105.4 | Persistent world state, agent memory, forks, embeddings |
+| Auth | Supabase Auth | (supabase-js) | `auth.uid()` RLS; players save forks |
+| LLM | Groq — Llama 4 Maverick | OpenAI-compatible API | Free (1k req/day); swap to Claude = one-line change |
+| Country data | World Bank API + REST Countries API | — | Free; seeds initial agent state |
+| News (monthly sync) | NewsAPI.org (free) | — | Real-world news injection for self-correction |
+| Monthly scheduler | GitHub Actions (cron) | — | Free; loops countries, calls Worker once each |
+| Hosting | GitHub Pages (web) + Cloudflare Workers (api) | — | Both free |
+
+**Skipped deliberately:** payments (open-source, no monetization), a separate ORM (supabase-js is enough), a dedicated test runner so far (add Vitest in M11 hardening).
+
+---
+
+## Project Structure
+
+```
+RealityShift/
+├─ apps/
+│  ├─ web/                    # frontend (Vite + React + CesiumJS) — own package.json
+│  │  └─ src/{components,pages,store,lib,data}
+│  └─ worker/                 # Cloudflare Worker (agents + API) — own package.json
+│     └─ src/{ai,agents,history,sync,data/history,lib}
+├─ supabase/                  # schema.sql + migrations/ (shared DB infra)
+├─ docs/                      # 01-product-overview, 02-architecture, 03-data-model
+├─ .github/workflows/         # monthly-sync.yml
+├─ PROJECT.md  ·  PLAN.md  ·  RESEARCH.md  ·  CLAUDE.md
+├─ package.json               # root: delegating scripts (npm --prefix apps/web run …)
+└─ .env.example
+```
+
+Conventions and the annotated tree live in [PROJECT.md](PROJECT.md). Root `package.json` delegates via `npm --prefix`; no npm workspaces until a shared `packages/` consumer exists.
 
 ---
 
 ## Data Model (Supabase)
 
+Authoritative schema: [`supabase/schema.sql`](supabase/schema.sql) + [`supabase/migrations/`](supabase/migrations/). Summary in [docs/03-data-model.md](docs/03-data-model.md).
+
 ```sql
--- The canonical world state, branched per fork
-worlds          { id, fork_of, created_at, is_live, player_id, forked_at_year }
-
--- Each country's state within a world
-country_states  { world_id, country_code, year, indicators{}, policies{},
-                  agent_memory_summary, last_updated }
-
--- Agent decisions log (what each agent decided and why)
-agent_decisions { world_id, country_code, year, decision{}, reasoning,
-                  historical_parallel, created_at }
-
--- Monthly divergence reports (live world only)
-divergences     { country_code, sim_year, real_date, sim_state{},
-                  real_state{}, delta{}, narrative, published_at }
-
--- Player game sessions
-game_sessions   { id, player_id, world_id, country_code, started_at,
-                  ended_at, summary }
+worlds          { id, fork_of, created_at, is_live, player_id, forked_at_year, player_country_code }
+country_states  { world_id, country_code, year, indicators{}, policies{}, agent_memory_summary, relations{}, last_updated }
+agent_decisions { world_id, country_code, year, decision{}, reasoning, historical_parallel, created_at }
+divergences     { country_code, sim_year, real_date, sim_state{}, real_state{}, delta{}, narrative, published_at }
+game_sessions   { id, player_id, world_id, country_code, started_at, ended_at, summary }
+-- + region_states (migration 004), world_events (migration 003)
 ```
 
 ---
 
 ## Environment Variables
 
-```
-# Cloudflare Worker (never in frontend)
-GROQ_API_KEY=               # Groq API — console.groq.com (free, no credit card)
-# Optional upgrade: set this to swap all LLM calls to Claude instead
-ANTHROPIC_API_KEY=          # Claude API — console.anthropic.com
-SUPABASE_SERVICE_KEY=       # Supabase service role key (full DB access)
-NEWS_API_KEY=               # NewsAPI.org — newsapi.org/register (free)
+Authoritative file: [`.env.example`](.env.example).
 
-# Frontend (public)
-VITE_CESIUM_ION_TOKEN=      # ion.cesium.com free account
-VITE_SUPABASE_URL=          # your Supabase project URL
-VITE_SUPABASE_ANON_KEY=     # Supabase anon key (safe to expose)
-VITE_AI_PROXY_URL=          # deployed Cloudflare Worker URL
+```
+# Cloudflare Worker secrets (wrangler secret put / dashboard — never in frontend)
+GROQ_API_KEY=          # console.groq.com (free, no card)
+ANTHROPIC_API_KEY=     # optional — swap LLM to Claude
+SUPABASE_URL=          # Supabase Project Settings > API
+SUPABASE_SERVICE_KEY=  # service_role key (bypasses RLS) — Worker only
+NEWS_API_KEY=          # newsapi.org/register (free)
+WORKER_SECRET=         # protects /api/agents/run and /api/sync/country
+
+# Frontend (public, VITE_*)
+VITE_CESIUM_ION_TOKEN= # ion.cesium.com (free)
+VITE_SUPABASE_URL=     # Supabase Project Settings > API
+VITE_SUPABASE_ANON_KEY=# anon public key (RLS protects access)
+VITE_AI_PROXY_URL=     # deployed Worker URL (local: http://localhost:8787)
 ```
 
 ---
 
 ## Milestones
 
-### Milestone 1: Scaffold
-**Goal:** Dev server runs, Supabase connected, CesiumJS globe renders, all dependencies in place.
+Milestones 1–10 are **complete** (`[x]`) — this is an existing, feature-complete build. Remaining work is in Milestone 11 (deploy + hardening). Paths reflect the `apps/web` / `apps/worker` layout.
 
-Tasks:
-- [x] Initialize Vite + React + TypeScript: `npm create vite@latest realityshift -- --template react-ts` — Done when: `npm run dev` opens without errors
-- [x] Install dependencies: `cesium vite-plugin-cesium zustand @supabase/supabase-js` — Done when: all in package.json, no import errors
-- [x] Create Supabase project and run the schema from `supabase/schema.sql` (worlds, country_states, agent_decisions, divergences, game_sessions tables) — Done when: tables visible in Supabase dashboard
-- [x] Set up Cloudflare Worker project in `workers/` with Wrangler — Done when: `wrangler dev` runs a hello-world endpoint
-- [x] Render a bare CesiumJS globe in `src/components/Globe.tsx` — Done when: 3D Earth spins in browser
-- [x] Create `.env.example` with all vars listed above — Done when: committed
-- [x] Create `workers/src/ai/llm.ts` — a thin wrapper around the Groq API (OpenAI-compatible) that exports a single `chat(messages, model?)` function; model defaults to `llama-4-maverick-17b-128e-instruct` — Done when: a test call returns a text response and swapping to Claude requires only changing the base URL and API key
+### Milestone 1: Scaffold ✅
+- [x] Vite + React + TypeScript app in `apps/web` — `npm run dev` starts cleanly
+- [x] Cloudflare Worker project in `apps/worker` with Wrangler — `wrangler dev` runs
+- [x] Supabase project + `supabase/schema.sql` (worlds, country_states, agent_decisions, divergences, game_sessions) — tables visible in Supabase
+- [x] CesiumJS globe renders in `apps/web/src/components/Globe.tsx`
+- [x] `.env.example` with all vars committed
+- [x] `apps/worker/src/ai/llm.ts` — Groq wrapper (`chat(messages, model?)`), Claude-swappable
 
----
+### Milestone 2: World State + Country Data ✅
+- [x] `apps/worker/src/seed.ts` — World Bank indicators for all countries → `country_states` (world_id `live`)
+- [x] `apps/web/src/data/worldbank.ts` — typed fetchers for the 7 indicators
+- [x] GeoJSON country boundaries as CesiumJS entities
+- [x] Country click → `country_states` → `CountryPanel` sidebar
+- [x] Choropleth by GDP per capita from live state
 
-### Milestone 2: World State + Country Data
-**Goal:** The live world (`world_id = 'live'`) is seeded with real data for all countries. Clicking a country shows its current simulated state.
+### Milestone 3: Country AI Agents ✅
+- [x] `apps/worker/src/data/history/country_histories.json` — 20-year structured histories
+- [x] `apps/worker/src/agents/countryAgent.ts` — reads state, loads history, finds 3 parallels, returns a structured decision
+- [x] `apps/worker/src/agents/prompt.ts` — agent plays the current government, grounded in history, aware of neighbors
+- [x] `apps/worker/src/agents/runAgents.ts` — iterates a world, writes decisions + updates state
+- [x] `POST /api/agents/run` (secret-protected) triggers the live world
 
-Tasks:
-- [x] Write `workers/src/seed.ts` — fetches World Bank indicators for all 195 countries and inserts into `country_states` for `world_id = 'live'`, `year = current` — Done when: running the seed script populates Supabase with real GDP, population, tax rate, military spend, education spend, healthcare, unemployment for all countries
-- [x] Create `src/data/worldbank.ts` — typed fetch functions for all 7 indicators — Done when: each returns typed data for any country code
-- [x] Load GeoJSON country boundaries in Globe as CesiumJS entities — Done when: country outlines visible
-- [x] Country click → fetch `country_states` for that country from Supabase → show in `src/components/CountryPanel.tsx` sidebar — Done when: clicking India shows real seeded data
-- [x] Choropleth: color globe by GDP per capita from live world state — Done when: visible color variation across all countries
+### Milestone 4: Historical Grounding (RAG) ✅
+- [x] `apps/worker/src/data/history/periods.json` — 30+ historical policy periods
+- [x] `apps/worker/src/history/embed.ts` — TF-IDF vectors over tags + policy keys
+- [x] `apps/worker/src/history/match.ts` — top-3 closest periods by cosine similarity
+- [x] Matched context injected into agent prompts (with "today's world differs" reasoning)
+- [x] Top match stored in `agent_decisions.historical_parallel`
 
----
+### Milestone 5: Monthly Sync + Divergence Tracking ✅
+- [x] `.github/workflows/monthly-sync.yml` — `cron('0 0 1 * *')`, loops countries, `workflow_dispatch` for single-country test
+- [x] `apps/worker/src/sync/fetchNews.ts` — NewsAPI top headlines per country
+- [x] `apps/worker/src/sync/compareState.ts` — compares indicators to news → `{ diverged, delta, explanation, self_correction }`
+- [x] `apps/worker/src/sync/publishDivergence.ts` — writes `divergences` + applies self-correction
+- [x] `apps/worker/src/sync/syncCountry.ts` — single-country pipeline, `POST /api/sync/country`
 
-### Milestone 3: Country AI Agents
-**Goal:** Each country has an AI agent that can make autonomous decisions for its country. Agents are grounded in the country's last 10–20 years of history.
+### Milestone 6: Public Divergence Dashboard ✅
+- [x] `apps/web/src/pages/WorldDashboard.tsx` — public `/world`, no auth
+- [x] `apps/web/src/components/DivergenceCard.tsx` — sim vs. real, delta, narrative
+- [x] Globe colored by divergence magnitude
+- [x] Divergence RSS feed at `/world/feed.xml`
+- [x] Per-country Agent Decision Log (`DecisionLog.tsx`)
 
-Tasks:
-- [x] Create `src/data/history/country_histories.json` — for the 20 most common starting countries, a structured summary of the last 20 years: major policy changes, economic events, political shifts, international relations, with year tags. Sourced from Wikipedia and public records — Done when: each entry has at least 15 dated events covering 2005–2025
-- [x] Write `workers/src/agents/countryAgent.ts` — the core agent function: given `(world_id, country_code)`, reads the country's current state from Supabase, loads its historical summary, finds the 3 closest historical parallels (from `periods.json`), builds a Claude prompt, and returns a structured decision: `{ policies_adjusted{}, reasoning, historical_parallel, projected_indicators{} }` — Done when: calling the agent for India returns a plausible autonomous decision
-- [x] Agent prompt design in `workers/src/agents/prompt.ts`: the agent plays the role of the current government (matching real political leaning of the country), grounds decisions in documented history, reasons about neighboring countries' states, and explicitly flags if its decision resembles a historical pattern — Done when: India's agent makes decisions consistent with a center-left coalition government
-- [x] Write `workers/src/agents/runAgents.ts` — iterates over all countries in a world, calls `countryAgent` for each, writes decisions to `agent_decisions` and updates `country_states` — Done when: running manually advances the world by one simulated month for all countries
-- [x] Expose a Worker endpoint `POST /api/agents/run` (protected by a secret header) that triggers `runAgents` for the live world — Done when: calling the endpoint updates Supabase
+### Milestone 7: Player Takeover + World Forking ✅
+- [x] Supabase Auth (email/password) in `authStore.ts`
+- [x] "Take Over" button — new `worlds` row + copy all `country_states` into the fork
+- [x] Policy editor writes to the forked `world_id`
+- [x] "Simulate Year" runs other countries' agents reacting to the player
+- [x] No news injection in forks (`is_live` gate)
+- [x] Fork dashboard toggle: "Your Universe" vs "Real World Simulation"
 
----
+### Milestone 8: Multi-Agent Coordination ✅
+- [x] Agents receive recent decisions of top trade partners/neighbors
+- [x] Inter-agent event system (`events.ts`, migration `003_world_events.sql`)
+- [x] Global "World Events" feed (`WorldEventsFeed.tsx`)
+- [x] Conflict detection → diplomatic crisis events
+- [x] Alliance tracking in `country_states.relations{}`
 
-### Milestone 4: Historical Grounding (RAG)
-**Goal:** Agent decisions are grounded in real historical precedents. When a country's trajectory resembles a historical period, the agent explicitly reasons from that precedent while accounting for how today's world differs.
+### Milestone 9: Globe Visualization ✅
+- [x] Choropleth overlays (GDP, Happiness, Military Spend, Divergence)
+- [x] Animated arcs for diplomatic/military/trade events
+- [x] Country pulse on player action
+- [x] Camera fly-to on selection
+- [x] Hover tooltip (flag, name, GDP, approval, top parallel)
 
-Tasks:
-- [x] Create `src/data/history/periods.json` — 50+ historical policy periods with: `{ id, name, country, yearRange, tags[], policyProfile{}, outcomes{}, internationalReaction, summary }`. Cover: Weimar hyperinflation, Nazi Germany, FDR New Deal, Thatcher privatizations, Mao's Great Leap Forward, Pinochet shock therapy, Nordic social democracy, Soviet collapse, Asian financial crisis, etc. — Done when: at least 30 well-structured entries
-- [x] Write `workers/src/history/embed.ts` — computes TF-IDF vectors over `tags` + `policyProfile` keys for each period, exports as a static lookup table — Done when: returns a numeric vector for any period ID
-- [x] Write `workers/src/history/match.ts` — given a country's current policy state, returns the top 3 closest historical periods by cosine similarity with scores — Done when: a country with rising `military_spend`, `nationalist_rhetoric`, `press_restrictions` tags surfaces 1930s Germany as top match
-- [x] Inject matched context into agent prompts: "Closest historical parallel: [period]. What happened then: [outcomes]. International reaction then: [internationalReaction]. Today's world is different — reason through: current nuclear deterrence, international institutions (UN/WTO/EU/ICC), economic interdependence, social media, and this country's current diplomatic relations. The outcome may be similar, harsher, milder, or entirely different." — Done when: authoritarian policy shifts produce historically-informed but contextually-adjusted predictions
-- [x] Store matched historical parallel in `agent_decisions.historical_parallel` — Done when: every decision row in Supabase includes the top match and similarity score
+### Milestone 10: Regional Drill-Down ✅
+- [x] State/province GeoJSON (admin-1) for 10 large countries
+- [x] Country→state boundary switch below ~2000km altitude
+- [x] `RegionPanel.tsx` with region stats (migration `004_region_states.sql`)
+- [x] 3 local policy types (Housing, Transport, Local Tax)
+- [x] Regional changes included in agent prompts
 
----
+### Milestone 11: Deploy + Harden + Open Source ◐
+**Goal:** Live on GitHub Pages, Workers deployed, free-tier operational risks handled, repo ready for contributors.
 
-### Milestone 5: Monthly Sync + Divergence Tracking
-**Goal:** Once a month, each country agent fetches real news, compares the simulated state to reality, self-corrects, and publishes a divergence report.
-
-Tasks:
-- [x] Add a GitHub Actions workflow at `.github/workflows/monthly-sync.yml` with `schedule: cron('0 0 1 * *')` (runs 1st of each month) — the Action loops through all country codes and calls `POST /api/sync/country` on the Worker once per country, sequentially — Done when: workflow file exists and a manual trigger (`workflow_dispatch`) successfully processes one test country
-- [x] Write `workers/src/sync/fetchNews.ts` — for each country, calls NewsAPI.org with `q=[country name] economy policy government` and returns the top 5 most relevant headlines + summaries — Done when: returns real headlines for India, USA, Germany
-- [x] Write `workers/src/sync/compareState.ts` — builds a Claude prompt comparing `country_states.indicators` to a summary of real news, returns: `{ diverged: bool, delta{}, explanation, self_correction{} }` — Done when: if the simulation has India's GDP growing at 8% but news reports a recession, Claude flags the divergence with an explanation
-- [x] Write `workers/src/sync/publishDivergence.ts` — if `diverged = true`, inserts a row into `divergences` with the full delta and narrative; then applies `self_correction` to `country_states` to bring the live world back toward reality — Done when: divergences table gains a row after a mismatch is detected
-- [x] Write `workers/src/sync/syncCountry.ts` — handles a single country: fetchNews → compareState → publishDivergence, exposed as `POST /api/sync/country` with `{ country_code }` body — Done when: calling the endpoint for `"IND"` fetches real India news, compares to simulated state, and writes to Supabase
-
----
-
-### Milestone 6: Public Divergence Dashboard
-**Goal:** A read-only public page at `/world` shows the live simulation state and all divergence reports — the "alternate history" tracker.
-
-Tasks:
-- [x] Build `src/pages/WorldDashboard.tsx` — a public page at `/world` that fetches and displays: current simulated year, world GDP, top 5 divergences by magnitude, and a timeline of recent divergence events — Done when: page loads without auth and shows live Supabase data
-- [x] Build `src/components/DivergenceCard.tsx` — shows per-country divergence: simulated state vs. real state, the delta, and Claude's narrative explanation — Done when: clicking a country in the dashboard shows its divergence history
-- [x] Add globe view to the dashboard: countries colored by divergence magnitude (green = tracking reality closely, red = highly diverged) — Done when: the globe shows visible variation based on `divergences` table data
-- [x] Add divergence RSS feed at `/world/feed.xml` — lists the 20 most recent divergence reports as RSS items so people can subscribe — Done when: feed validates and loads in an RSS reader
-- [x] Add "Agent Decision Log" per country — a public timeline of every autonomous decision an agent has made, with its reasoning — Done when: clicking India shows a chronological log of agent decisions going back to simulation start
-
----
-
-### Milestone 7: Player Takeover + World Forking
-**Goal:** A logged-in player can take over any country from its agent and fork the world. The fork is a true parallel universe — no new real-world data enters it. Other country agents react to the player's decisions.
-
-Tasks:
-- [x] Add Supabase Auth: email/password signup and login — Done when: player can create account and session persists across page refreshes
-- [x] "Take Over" button on any CountryPanel — creates a new row in `worlds` (`fork_of = 'live'`, `forked_at_year = current`, `player_id = auth.uid`) and copies all `country_states` from the live world into the new `world_id` — Done when: clicking Take Over for India creates a fork world in Supabase with all 195 countries' states copied
-- [x] Player policy editor: when playing a fork, the player can adjust policies, pass laws, and change budgets — same UI as before but writes to the forked `world_id` not the live world — Done when: player changes India's military budget in their fork without affecting the live world
-- [x] "Simulate Year" button: when player confirms changes, runs `countryAgent` for all other countries in the fork (reacting to India's new state), updates their `country_states`, advances year — Done when: India cuts taxes → other country agents receive the updated India state and respond (trade partners adjust, adversaries react, etc.)
-- [x] No news injection in forks: `runMonthlySync` only runs on `world_id = 'live'`; forks never receive real-world data — Done when: confirmed by code review that sync functions check `is_live` before running
-- [x] Fork dashboard: player can see their fork's state vs. the live world on the same globe — a toggle between "Your Universe" and "Real World Simulation" — Done when: toggle switches globe data source between fork and live world states
-
----
-
-### Milestone 8: Multi-Agent Coordination
-**Goal:** Country agents are aware of each other and react to neighboring decisions. Diplomatic events, trade responses, and military posturing emerge from agent interactions.
-
-Tasks:
-- [x] Extend `countryAgent` prompt context: before deciding, each agent receives a summary of the last 3 decisions made by its top 5 trade partners and neighbors — Done when: India's agent prompt includes summaries of China, Pakistan, USA, and EU recent decisions
-- [x] Add inter-agent event system: agents can emit events (`{ type: 'sanction' | 'trade_deal' | 'military_posture' | 'diplomatic_protest', from, to, details }`) that are stored in `agent_decisions` and picked up by the target country's agent on its next run — Done when: if India imposes tariffs on China, China's next decision includes the tariff event as context
-- [x] Add a global "World Events" feed in the UI — a scrolling ticker of recent inter-agent events (sanctions, alliances, trade deals, conflicts) — Done when: the globe UI shows a live feed of AI-generated world events
-- [x] Conflict detection: if two agents' military posture scores exceed a threshold against each other, Claude generates a conflict scenario with resolution options — Done when: two countries with high mutual military hostility produce a diplomatic crisis event
-- [x] Alliance tracking: agents can form and break alliances stored in `country_states.relations{}` — Done when: an agent that forms an alliance routes trade through that ally and cites it in subsequent decisions
+- [ ] **Fix the typecheck gate:** resolve duplicate-key errors at `apps/web/src/components/Globe.tsx:105` and `apps/web/src/pages/WorldDashboard.tsx:238` — Done when: `npm run typecheck` passes clean
+- [ ] **Supabase keep-alive:** add a weekly GitHub Action that hits a lightweight read endpoint so the free project never pauses between monthly syncs — Done when: project stays active for >1 week with no manual visit
+- [ ] **News quota guard:** make `fetchNews.ts` / the sync workflow respect NewsAPI's ~100/day (batch over two days or swap source) — Done when: a full 195-country sync completes without 429s
+- [ ] Deploy the Worker with production secrets (`GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `NEWS_API_KEY`, `WORKER_SECRET`) — Done when: endpoints respond in production
+- [ ] Confirm the monthly-sync workflow in production (`WORKER_SECRET`, `WORKER_URL` as Actions secrets) — Done when: a manual run processes all countries within the error threshold
+- [ ] GitHub Actions workflow to auto-deploy `apps/web` to GitHub Pages on push to `main` — Done when: push deploys automatically
+- [ ] Set `base` in `apps/web/vite.config.ts` to the Pages repo path — Done when: assets load at the Pages URL
+- [ ] Add Vitest + unit tests for `history/match.ts` and `sync/compareState.ts` — Done when: `npm test` runs green in CI
+- [ ] Rewrite `README.md` (currently Vite boilerplate): what it is, architecture diagram, <10-min local setup, all API-key steps — Done when: a new contributor runs locally without asking
+- [ ] `CONTRIBUTING.md`: how to add a `periods.json` entry, a `country_histories.json` entry, improve prompts, code style — Done when: structured with examples
 
 ---
 
-### Milestone 9: Globe Visualization
-**Goal:** The globe is the primary game surface — it reacts to simulation events, policy changes, and divergences in real time.
+### Milestone 12: Differentiation & Distribution ◐ *(research-driven)*
+**Goal:** Lean into the one thing no competitor has — the **divergence dashboard** — and cheaply validate that people actually want "AI alternate-history vs. reality." [RESEARCH.md](RESEARCH.md) found AI-runs-the-countries is already commoditized (Pax Historia, ~35k DAU); the persistent shared world + divergence tracking is the defensible wedge, and demand for *that specific angle* is still unproven.
 
 Tasks:
-- [x] Choropleth overlays: GDP, Happiness Index, Military Spend, Divergence from Reality — Done when: each overlay re-colors the globe within 500ms
-- [x] Animated events: when an agent emits a diplomatic/military/trade event, draw an animated arc between the two countries — Done when: trade deals show a brief gold arc, sanctions show a red arc
-- [x] Country pulse on player action: when player confirms a policy change, their country glows briefly — Done when: visible animation triggers within 200ms of confirmation
-- [x] Camera fly-to: selecting a country smoothly flies the globe to center it — Done when: transitions complete in ~1.5 seconds
-- [x] Country hover tooltip: flag, name, current simulated GDP, approval rating, top historical parallel — Done when: 300ms hover shows tooltip
-
----
-
-### Milestone 10: Regional Drill-Down
-**Goal:** Players can zoom into a country and make sub-national policy decisions at the state/province level.
-
-Tasks:
-- [x] Load state/province GeoJSON (Natural Earth admin-1) for India, USA, UK, Germany, Brazil, China, France, Australia, Canada, Japan — Done when: zooming into India shows state outlines
-- [x] Switch from country to state boundaries below camera altitude 2000km — Done when: smooth zoom transition
-- [x] Region click opens `src/components/RegionPanel.tsx` with region-level stats (World Bank sub-national or AI-estimated) — Done when: clicking Maharashtra shows population and basic stats
-- [x] 3 local policy types: Housing (rent control/zoning), Transport (transit funding), Local Tax (municipal rates) — Done when: sliders exist and write to region-level state in Supabase
-- [x] Include active regional changes in agent simulation prompts — Done when: a Mumbai housing policy affects Claude's national narrative
-
----
-
-### Milestone 11: Deploy + Open Source
-**Goal:** Live at GitHub Pages, all Workers deployed, repo ready for community contributions.
-
-Tasks:
-- [ ] Deploy Cloudflare Worker with all production secrets: `ANTHROPIC_API_KEY`, `SUPABASE_SERVICE_KEY`, `NEWS_API_KEY` — Done when: worker endpoints respond correctly in production
-- [ ] Confirm the monthly sync GitHub Actions workflow runs correctly in production — add `WORKER_SECRET` and `WORKER_URL` as GitHub Actions secrets — Done when: manually triggering the workflow processes all countries without errors
-- [ ] GitHub Actions workflow to auto-deploy frontend to GitHub Pages on push to `main` — Done when: push deploys automatically
-- [ ] Set `base` in `vite.config.ts` to GitHub Pages repo path — Done when: assets load correctly at Pages URL
-- [ ] Write `README.md`: what it is, architecture diagram, local setup under 10 minutes, all API key setup steps — Done when: new contributor can run locally without asking questions
-- [ ] Write `CONTRIBUTING.md`: how to add a historical period to `periods.json`, how to add a country history to `country_histories.json`, how to improve agent prompts, code style — Done when: clearly structured with examples
+- [ ] **Shareable divergence cards:** generate an Open Graph image per divergence (country flag, "AI predicted X · reality was Y", magnitude) + a share button on `DivergenceCard.tsx` — Done when: pasting a divergence URL into a social/chat app shows a rich preview card
+- [ ] **"Most diverged this month" highlight** on `/world`: a hero section ranking the biggest sim-vs-reality gaps with one-line narratives — Done when: the dashboard opens on the month's most compelling divergences, not a flat list
+- [ ] **Reframe the public copy to lead with divergence**, not "AI runs the countries": update `/world` headline, README hook, and OG/meta tags — Done when: a first-time visitor understands "alternate history vs. reality" within one screen
+- [ ] **Cheapest validation loop:** add lightweight, privacy-respecting analytics (e.g. self-hosted/cookieless) on `/world` and share-button clicks — Done when: you can see whether divergence content drives visits and shares before investing further in the game layer
+- [ ] **Distribution seed:** the existing `/world/feed.xml` RSS plus a short "what is this" pinned post for one relevant community (r/worldbuilding, r/grandstrategy, alternate-history forums) — Done when: the feed is discoverable and one community post is published
 
 ---
 
 ## Claude Code Commands
 
-**Start fresh (Milestone 1):**
+> Every session: fetch the latest official docs for any library before coding, and keep `PROJECT.md` in sync.
+
+**Resume (continue Milestone 11):**
 ```
-claude "Read PLAN.md and complete Milestone 1. Mark tasks done as you go. Stop after Milestone 1 and commit."
+claude "Read PLAN.md and PROJECT.md. Find the first incomplete task and continue, fetching the latest official docs for any library before using it. Keep PROJECT.md in sync. Mark tasks done as you go. Commit when a milestone is complete."
 ```
 
-**Resume from any point:**
+**Test the current state:**
 ```
-claude "Read PLAN.md, find the first incomplete task, and continue. Mark tasks done as you go. Commit when a milestone is complete."
-```
-
-**Test current state:**
-```
-claude "Read PLAN.md. Without building anything new, test everything marked done. Report what works and what's broken."
+claude "Read PLAN.md and PROJECT.md. Without building anything new, test everything marked done. Report what works and what's broken."
 ```
 
 ---
 
 ## Notes & Decisions
 
-- **Simulation-first, game-second**: Build and validate the always-on simulation (M1–M6) before the game layer (M7+). If the agents aren't making coherent decisions, the game won't work. Milestone 5 (monthly sync + divergence) is the validation point — if divergences look realistic, the agents are working.
-
-- **World forking via Supabase rows**: Forking the world is just copying `country_states` to a new `world_id`. This is cheap (195 rows) and clean. The fork never touches the live world again. Players can have multiple forks.
-
-- **No new data in forks**: Once a player takes over, their universe is frozen from real-world input. This is the philosophical core — it's a true parallel universe. Implementing this means the monthly sync Worker checks `worlds.is_live` before running.
-
-- **Agent political alignment**: Each country agent should reflect the actual current government's political leaning (sourced from the country history data). India's agent behaves like the BJP government; Germany's like the current coalition. This is critical for realism. The political alignment is part of `country_states` and can drift over time if the simulation runs long enough.
-
-- **History as analogy, not determinism**: Historical matches ground the agent's reasoning but don't determine it. The prompt explicitly tells Claude to reason through how today's world differs — nuclear deterrence, international institutions, economic interdependence, social media. A 1930s Germany trajectory in modern Germany would face the EU, NATO, the ICC, and instant global scrutiny.
-
-- **No moralizing, no blocking**: Agents and players can pursue any political direction — authoritarian, libertarian, theocratic, communist. The simulation shows consequences, not judgments. The historical parallel card is informational, never a blocker.
-
-- **Monthly sync scheduler — GitHub Actions, not Cloudflare Cron**: Cloudflare Workers free tier has a 10ms CPU time limit per invocation and a wall-clock duration limit — nowhere near enough to process 195 countries in one go. The paid Bundled plan ($5/month) removes this limit for cron triggers, but it's avoidable. Instead, a GitHub Actions scheduled workflow runs on the 1st of each month and calls the Worker once per country in sequence. Each Worker invocation handles one country (short, well within limits), and GitHub Actions execution time is free and generous.
-- **LLM — Groq by default, Claude as optional upgrade**: Groq's free tier (1k req/day, 30 rpm, Llama 4 Maverick) covers the monthly 195-country sync (~7 minutes at 30 rpm) and casual gameplay at zero cost. Because Groq uses an OpenAI-compatible API, all LLM calls go through a single `src/ai/llm.ts` wrapper — swapping to Claude is a one-line config change. If the game grows and free tier limits become an issue, Claude Haiku for minor countries and Sonnet for G20 is the upgrade path (~$10–30/month).
-
-- **Community knowledge base**: `periods.json` and `country_histories.json` are the most valuable community contribution targets. These are plain JSON — no code needed to add a historical period or improve a country's 20-year history. `CONTRIBUTING.md` should make this the easiest possible first PR.
-
-- **Divergence as content**: The public divergence dashboard is not just a debugging tool — it's the product's most interesting public-facing feature. "Here's what AI predicted India would do, and here's what actually happened" is genuinely compelling. Consider a social share button on each divergence card.
+- **Backend is Supabase, not Neon.** An earlier draft planned a Supabase→Neon migration; the code, schema (`auth.users`), and env were always Supabase and never migrated. Supabase gives the same Postgres + pgvector + Auth + RLS on one free tier — the migration was pure churn and is dropped.
+- **Repo restructured to `apps/web` + `apps/worker`** with a delegating root `package.json` (project-planner canonical layout).
+- **Positioning narrowed** after research: Pax Historia already ships AI-driven grand strategy, so the differentiator is the persistent shared world + divergence-vs-reality, not "AI runs the countries." Milestone 12 turns this into concrete work — the divergence dashboard is treated as the product's wedge and growth surface, not a debugging view.
+- **The wedge is unvalidated — validate before scaling.** Competitor traction proves appetite for AI nations, *not* for divergence-vs-reality. Don't pour effort into deeper game mechanics until the public `/world` dashboard shows real visit/share signal (Milestone 12 analytics). Cheapest test first.
+- **Competitive urgency:** divergence tracking is currently unoccupied but easy for a funded competitor to copy. Ship the shareable dashboard early to plant the flag.
+- **Simulation-first, game-second.** M1–M6 validate the always-on simulation before the game layer; the monthly divergence loop (M5) is the realism checkpoint.
+- **Forking via Supabase rows.** A fork copies ~195 `country_states` to a new `world_id`; it never touches the live world again. The monthly sync checks `is_live`.
+- **History as analogy, not determinism.** Historical matches ground reasoning; the prompt forces accounting for nuclear deterrence, international institutions, interdependence, and social media.
+- **No moralizing, no blocking.** Any political direction is allowed; the sim shows consequences, not judgments.
+- **LLM — Groq by default, Claude as optional upgrade**, behind one `ai/llm.ts` wrapper.
+- **Monthly sync — GitHub Actions, not Cloudflare Cron**, to avoid the Workers per-invocation CPU limit; one country per Worker call.
+- **Community knowledge base** (`periods.json`, `country_histories.json`) is the easiest first PR — plain JSON, no code.

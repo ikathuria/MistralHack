@@ -102,7 +102,7 @@ const NUMERIC_TO_ISO3: Record<string, string> = {
   '760':'SYR','764':'THA','792':'TUR','800':'UGA','804':'UKR','784':'ARE',
   '826':'GBR','840':'USA','858':'URY','860':'UZB','862':'VEN','704':'VNM',
   '887':'YEM','894':'ZMB','716':'ZWE','702':'SGP','191':'HRV','703':'SVK',
-  '348':'HUN','233':'EST','428':'LVA','440':'LTU','643':'RUS',
+  '348':'HUN','233':'EST','428':'LVA','440':'LTU',
 };
 
 // entity.id (numeric string) → ISO3 — populated after GeoJSON load

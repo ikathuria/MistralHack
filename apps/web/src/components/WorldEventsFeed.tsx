@@ -10,39 +10,43 @@ const EVENT_META: Record<string, { icon: string; color: string; label: string }>
   conflict_risk:       { icon: '🔴', color: '#ef4444', label: 'Conflict Risk'   },
 };
 
-function EventRow({ event }: { event: WorldEvent }) {
+function EventRow({ event, index }: { event: WorldEvent; index: number }) {
   const meta = EVENT_META[event.event_type] ?? { icon: '🌐', color: '#9ca3af', label: event.event_type };
 
   return (
-    <div style={{
-      padding: '10px 0',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
-    }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontSize: 14 }}>{meta.icon}</span>
+    <div
+      className="event-card fade-up"
+      style={{
+        borderLeftColor: meta.color,
+        animationDelay: `${index * 0.04}s`,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 7, alignItems: 'center', marginBottom: 5 }}>
+        <span style={{ fontSize: 13 }}>{meta.icon}</span>
         <span style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
-          color: meta.color, background: `${meta.color}18`,
+          fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6,
+          color: meta.color, background: `${meta.color}15`,
+          border: `1px solid ${meta.color}30`,
           padding: '2px 6px', borderRadius: 4,
         }}>
           {meta.label}
         </span>
-        <span style={{ color: '#6b7280', fontSize: 11, marginLeft: 'auto' }}>
+        <span style={{ color: '#4b5563', fontSize: 10, marginLeft: 'auto', fontWeight: 600 }}>
           yr {event.sim_year}
         </span>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: 12 }}>{event.from_country}</span>
+      <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginBottom: 5 }}>
+        <span style={{ fontWeight: 700, fontSize: 12, color: '#e5e7eb' }}>{event.from_country}</span>
         {event.to_country && (
           <>
-            <span style={{ color: '#4b5563', fontSize: 11 }}>→</span>
-            <span style={{ fontWeight: 600, fontSize: 12 }}>{event.to_country}</span>
+            <span style={{ color: '#374151', fontSize: 10 }}>→</span>
+            <span style={{ fontWeight: 700, fontSize: 12, color: '#e5e7eb' }}>{event.to_country}</span>
           </>
         )}
       </div>
 
-      <p style={{ color: '#9ca3af', fontSize: 12, margin: 0, lineHeight: 1.4 }}>
+      <p style={{ color: '#6b7280', fontSize: 11, margin: 0, lineHeight: 1.5 }}>
         {event.details.slice(0, 160)}{event.details.length > 160 ? '…' : ''}
       </p>
     </div>
@@ -58,14 +62,14 @@ export default function WorldEventsFeed({ events, maxHeight }: Props) {
   if (!events.length) {
     return (
       <p style={{ color: '#4b5563', fontSize: 13 }}>
-        No inter-country events recorded yet. Events appear after the first agent simulation cycle.
+        No inter-country events yet. Events appear after the first agent simulation cycle.
       </p>
     );
   }
 
   return (
     <div style={{ overflowY: 'auto', maxHeight: maxHeight }}>
-      {events.map(e => <EventRow key={e.id} event={e} />)}
+      {events.map((e, i) => <EventRow key={e.id} event={e} index={i} />)}
     </div>
   );
 }

@@ -1,73 +1,69 @@
-# React + TypeScript + Vite
+# RealityShift
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A persistent, free, open-source multi-agent world simulation. One AI agent runs each country based on real history. The live world tracks itself against real news and publishes **divergence reports** (alternate-history-vs-reality). Fork the world, take over any country, and watch every other country's agent react — a parallel universe with no new real-world data injected.
 
-Currently, two official plugins are available:
+- **What & why:** [docs/01-product-overview.md](docs/01-product-overview.md)
+- **How it's built:** [PROJECT.md](PROJECT.md) · [docs/02-architecture.md](docs/02-architecture.md)
+- **Build plan / status:** [PLAN.md](PLAN.md)
+- **Is it worth building:** [RESEARCH.md](RESEARCH.md)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+Vite + React + TypeScript + CesiumJS (`apps/web`) · Cloudflare Workers (`apps/worker`) · Supabase (Postgres + pgvector + Auth) · Groq (Llama 4 Maverick, Claude-swappable) · GitHub Actions (monthly sync). All free-tier. Versions in [PROJECT.md](PROJECT.md#stack).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Repository layout
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+apps/web/      frontend (globe, panels, dashboard)
+apps/worker/   Cloudflare Worker — agents, RAG, monthly sync, API
+supabase/      schema.sql + migrations
+docs/          product, architecture, data model
+.github/       monthly-sync workflow
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Local setup
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# 1. Install both apps
+npm run install:all
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 2. Configure secrets — copy and fill in
+cp .env.example .env
+#   Worker: GROQ_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY, NEWS_API_KEY, WORKER_SECRET
+#   Web:    VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CESIUM_ION_TOKEN, VITE_AI_PROXY_URL
+
+# 3. Initialize the database
+#   Run supabase/schema.sql in the Supabase SQL editor, then apply supabase/migrations/* in order.
+
+# 4. Seed the live world (World Bank data)
+#   Run the seeder in apps/worker (see apps/worker/src/seed.ts).
+
+# 5. Run
+npm run dev          # frontend  → http://localhost:5173
+npm run worker:dev   # worker    → http://localhost:8787
 ```
+
+Get free API keys: [Groq](https://console.groq.com) · [Supabase](https://supabase.com) · [NewsAPI](https://newsapi.org/register) · [Cesium Ion](https://ion.cesium.com).
+
+## Useful scripts (run from repo root)
+
+| Command | Does |
+|---|---|
+| `npm run dev` | Start the web app |
+| `npm run worker:dev` | Start the Worker locally |
+| `npm run build` | Build the web app |
+| `npm run typecheck` | Typecheck the web app |
+| `npm run lint` | Lint the web app |
+| `npm run worker:deploy` | Deploy the Worker |
+
+## Status
+
+Feature-complete through Milestone 10; remaining work is deploy + operational hardening (Milestone 11). See [PROJECT.md](PROJECT.md#current-status).
+
+## Contributing
+
+The easiest first PR is the community knowledge base — plain JSON, no code: add a historical period to `apps/worker/src/data/history/periods.json` or a country's recent history to `country_histories.json`. A full `CONTRIBUTING.md` lands in Milestone 11.
+
+## License
+
+Open source (community-built, no revenue goal).

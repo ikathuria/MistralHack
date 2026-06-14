@@ -6,7 +6,8 @@
       "Bash(npx create-vite@latest . --template react-ts)",
       "Bash(npx create-vite@latest _vite_init --template react-ts)",
       "Bash(npm install *)",
-      "Bash(mkdir -p src/lib)"
+      "Bash(mkdir -p src/lib)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
     ]
   }
 }
