@@ -25,7 +25,9 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    // basename tracks Vite's base so routes resolve both at '/' in dev and
+    // under the '/RealityShift/' subpath GitHub Pages serves from.
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<GlobePage />} />
         <Route path="/world" element={<WorldDashboard />} />
