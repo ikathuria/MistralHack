@@ -15,6 +15,17 @@ dist-ssr
 .env.local
 .env.production
 
+# Cloudflare Wrangler local secrets — wrangler dev reads these, NOT .env
+.dev.vars
+**/.dev.vars
+
+# Local tooling state — wrangler build/cache output and Supabase CLI link state.
+# supabase/.temp holds project-ref and pooler-url (a credentialed connection
+# string), so this must never be committed.
+.wrangler/
+**/.wrangler/
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
