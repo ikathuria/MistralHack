@@ -64,7 +64,7 @@
 | Country Data | World Bank API + REST Countries API | Free, 200+ countries, 1400+ indicators — seeds initial agent state |
 | News (monthly sync) | NewsAPI.org free tier | Real-world news injection for monthly agent self-correction |
 | Historical Knowledge | Curated `periods.json` + pgvector embeddings | RAG source for historical grounding in agent decisions |
-| AI Model | Groq — Llama 4 Maverick | Free forever, no credit card; 1k req/day free tier; OpenAI-compatible API so swapping to Claude is a one-line config change if needed |
+| AI Model | Groq — Llama 3.3 70B | Free forever, no credit card; 1k req/day free tier; OpenAI-compatible API so swapping to Claude is a one-line config change if needed |
 | Hosting | GitHub Pages (frontend) + Cloudflare Workers (agents + API) | Both free |
 | Public Dashboard | Same frontend, read-only route `/world` | Shows live simulation state and divergence reports |
 
@@ -126,7 +126,7 @@ Tasks:
 - [x] Set up Cloudflare Worker project in `workers/` with Wrangler — Done when: `wrangler dev` runs a hello-world endpoint
 - [x] Render a bare CesiumJS globe in `src/components/Globe.tsx` — Done when: 3D Earth spins in browser
 - [x] Create `.env.example` with all vars listed above — Done when: committed
-- [x] Create `workers/src/ai/llm.ts` — a thin wrapper around the Groq API (OpenAI-compatible) that exports a single `chat(messages, model?)` function; model defaults to `llama-4-maverick-17b-128e-instruct` — Done when: a test call returns a text response and swapping to Claude requires only changing the base URL and API key
+- [x] Create `workers/src/ai/llm.ts` — a thin wrapper around the Groq API (OpenAI-compatible) that exports a single `chat(messages, model?)` function; model defaults to `llama-3.3-70b-versatile` (was `llama-4-maverick-17b-128e-instruct`, which Groq has since retired) — Done when: a test call returns a text response and swapping to Claude requires only changing the base URL and API key
 
 ---
 
@@ -286,7 +286,7 @@ claude "Read PLAN.md. Without building anything new, test everything marked done
 - **No moralizing, no blocking**: Agents and players can pursue any political direction — authoritarian, libertarian, theocratic, communist. The simulation shows consequences, not judgments. The historical parallel card is informational, never a blocker.
 
 - **Monthly sync scheduler — GitHub Actions, not Cloudflare Cron**: Cloudflare Workers free tier has a 10ms CPU time limit per invocation and a wall-clock duration limit — nowhere near enough to process 195 countries in one go. The paid Bundled plan ($5/month) removes this limit for cron triggers, but it's avoidable. Instead, a GitHub Actions scheduled workflow runs on the 1st of each month and calls the Worker once per country in sequence. Each Worker invocation handles one country (short, well within limits), and GitHub Actions execution time is free and generous.
-- **LLM — Groq by default, Claude as optional upgrade**: Groq's free tier (1k req/day, 30 rpm, Llama 4 Maverick) covers the monthly 195-country sync (~7 minutes at 30 rpm) and casual gameplay at zero cost. Because Groq uses an OpenAI-compatible API, all LLM calls go through a single `src/ai/llm.ts` wrapper — swapping to Claude is a one-line config change. If the game grows and free tier limits become an issue, Claude Haiku for minor countries and Sonnet for G20 is the upgrade path (~$10–30/month).
+- **LLM — Groq by default, Claude as optional upgrade**: Groq's free tier (1k req/day, 30 rpm, Llama 3.3 70B) covers the monthly 195-country sync (~7 minutes at 30 rpm) and casual gameplay at zero cost. Because Groq uses an OpenAI-compatible API, all LLM calls go through a single `src/ai/llm.ts` wrapper — swapping to Claude is a one-line config change. If the game grows and free tier limits become an issue, Claude Haiku for minor countries and Sonnet for G20 is the upgrade path (~$10–30/month).
 
 - **Community knowledge base**: `periods.json` and `country_histories.json` are the most valuable community contribution targets. These are plain JSON — no code needed to add a historical period or improve a country's 20-year history. `CONTRIBUTING.md` should make this the easiest possible first PR.
 
