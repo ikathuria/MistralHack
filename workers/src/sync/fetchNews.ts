@@ -48,10 +48,23 @@ export async function fetchCountryNews(
 
   try {
     const res = await fetch(url);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Log, don't swallow silently — an empty result is indistinguishable from
+      // "no news exists", which previously hid an auth/plan failure entirely.
+      console.warn(
+        `[fetchNews] ${countryName}: HTTP ${res.status} — ${(await res.text()).slice(0, 300)}`
+      );
+      return [];
+    }
 
     const data = (await res.json()) as NewsAPIResponse;
-    if (data.status !== 'ok' || !Array.isArray(data.articles)) return [];
+    if (data.status !== 'ok' || !Array.isArray(data.articles)) {
+      console.warn(`[fetchNews] ${countryName}: unexpected payload — ${JSON.stringify(data).slice(0, 300)}`);
+      return [];
+    }
+    if (data.articles.length === 0) {
+      console.warn(`[fetchNews] ${countryName}: 0 articles (totalResults=${data.totalResults})`);
+    }
 
     return data.articles.map(a => ({
       title: a.title,
@@ -60,7 +73,8 @@ export async function fetchCountryNews(
       publishedAt: a.publishedAt,
       url: a.url,
     }));
-  } catch {
+  } catch (err) {
+    console.warn(`[fetchNews] ${countryName}: request threw — ${String(err)}`);
     return [];
   }
 }
