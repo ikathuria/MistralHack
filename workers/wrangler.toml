@@ -11,6 +11,10 @@ compatibility_flags = ["nodejs_compat"]
 # NEWS_API_KEY =
 # WORKER_SECRET =
 
-[[routes]]
-pattern = "/api/*"
-zone_name = ""
+# No [[routes]] block: the Worker is served from its workers.dev subdomain
+# (https://realityshift-api.<subdomain>.workers.dev). A custom-domain route needs
+# a real `zone_name`; the previous `pattern = "/api/*"` with `zone_name = ""` was
+# invalid — it fails `wrangler deploy` outright, and in `wrangler dev` it rewrote
+# the incoming request URL so `new URL(request.url).host` resolved to "api",
+# which produced malformed `http://api/world` links in the RSS feed.
+workers_dev = true
