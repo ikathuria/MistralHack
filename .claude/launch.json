@@ -9,16 +9,15 @@
     },
     {
       "name": "realityshift-worker",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "wrangler",
-        "dev",
-        "-c",
-        "workers/wrangler.toml",
-        "--port",
-        "8787"
-      ],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "workers", "run", "dev"],
       "port": 8787
+    },
+    {
+      "name": "realityshift-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview", "--", "--port", "4173"],
+      "port": 4173
     }
   ]
 }
