@@ -385,12 +385,21 @@ export default function Globe() {
       ),
     });
 
-    // Real sun position, so the visitor's own daylight is reflected on the globe.
-    // This was previously fighting us — dimming translucent plates over black —
-    // but over opaque imagery it is the day/night terminator we actually want.
+    // Real sun position, so the visitor's own daylight is reflected on the globe
+    // as a day/night terminator across the imagery.
     viewer.scene.globe.enableLighting = true;
     viewer.scene.globe.baseColor = Color.fromCssColorString('#0b1b2b');
-    if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.brightnessShift = 0.15;
+
+    // Disable atmosphere scattering. Cesium's computeAtmosphereScattering shader
+    // fails to compile under ANGLE's Metal backend on Apple Silicon — ANGLE
+    // emits invalid MSL (a __metal_generic reference that will not bind), the
+    // vertex program fails to link, and the globe surface never draws (a black
+    // sphere). enableLighting selects the dynamic-atmosphere-lighting shader
+    // permutation, so leaving these on is what triggered it. The day/night
+    // terminator above does not depend on the atmosphere, so turning it off
+    // costs only the blue limb haze.
+    viewer.scene.globe.showGroundAtmosphere = false;
+    if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
     viewerRef.current = viewer;
 
     // Dev-only handle. The globe's render state is otherwise unreachable from
