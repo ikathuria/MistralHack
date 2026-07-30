@@ -1,5 +1,5 @@
 import type { Divergence } from '../store/worldStore';
-import { COUNTRY_NAMES } from './Globe';
+import { countryName } from '../data/countries';
 
 function DeltaRow({ label, value }: { label: string; value: number }) {
   const positive = value > 0;
@@ -37,7 +37,7 @@ export default function DivergenceCard({ div }: { div: Divergence }) {
           {/* ISO3 codes are developer-facing; lead with the readable name and
               keep the code as secondary metadata. */}
           <span style={{ fontWeight: 600, fontSize: 14 }}>
-            {COUNTRY_NAMES[div.country_code] ?? div.country_code}
+            {countryName(div.country_code)}
           </span>
           <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>sim yr {div.sim_year}</span>
         </div>

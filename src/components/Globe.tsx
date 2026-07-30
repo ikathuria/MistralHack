@@ -14,60 +14,19 @@ import {
   ConstantProperty,
   ArcType,
   EllipsoidTerrainProvider,
+  Math as CesiumMath,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { useWorldStore } from '../store/worldStore';
 import type { ChoroplethMode, WorldEvent } from '../store/worldStore';
 import { useRegionStore, SUPPORTED_DRILL_COUNTRIES } from '../store/regionStore';
+import { NUMERIC_TO_ISO3, countryName, COUNTRY_CENTROIDS as CENTROIDS } from '../data/countries';
 import type { FeatureCollection, Feature } from 'geojson';
 
 const cesiumToken = import.meta.env.VITE_CESIUM_ION_TOKEN as string | undefined;
 if (cesiumToken) Ion.defaultAccessToken = cesiumToken;
 
-// ─── Country centroid lookup (lon, lat) ──────────────────────────────────────
-const CENTROIDS: Record<string, [number, number]> = {
-  USA: [-98, 38],   CHN: [104, 35],   RUS: [105, 61],   IND: [78, 22],
-  GBR: [-2, 54],    DEU: [10, 51],    FRA: [2, 46],     JPN: [138, 37],
-  BRA: [-53, -14],  AUS: [133, -27],  CAN: [-96, 60],   KOR: [128, 37],
-  MEX: [-102, 23],  IDN: [118, -2],   TUR: [35, 39],    SAU: [45, 24],
-  ZAF: [25, -29],   NGA: [8, 10],     PAK: [69, 30],    UKR: [32, 49],
-  ITA: [12, 42],    ESP: [-3, 40],    POL: [20, 52],    ARG: [-64, -34],
-  COL: [-74, 4],    EGY: [30, 26],    IRN: [53, 32],    THA: [101, 15],
-  VNM: [108, 16],   PHL: [122, 12],   BGD: [90, 24],    SWE: [18, 62],
-  NOR: [10, 64],    FIN: [26, 64],    NLD: [5, 52],     BEL: [4, 51],
-  CHE: [8, 47],     AUT: [14, 47],    PRT: [-8, 39],    GRC: [22, 39],
-  ISR: [35, 31],    IRQ: [44, 33],    MAR: [-7, 32],    DZA: [3, 28],
-  ETH: [40, 9],     KEN: [38, 1],     TZA: [35, -6],    GHA: [-2, 8],
-  MMR: [96, 21],    KHM: [105, 12],   AFG: [67, 33],    YEM: [48, 15],
-  ARE: [54, 24],    KWT: [47, 29],    QAT: [51, 25],    JOR: [36, 31],
-  KAZ: [67, 48],    UZB: [63, 41],    MNG: [103, 46],   SGP: [104, 1],
-  MYS: [110, 4],    SDN: [30, 15],    MOZ: [35, -18],   CMR: [12, 6],
-};
 
-export const COUNTRY_NAMES: Record<string, string> = {
-  USA: 'United States',   CHN: 'China',         RUS: 'Russia',
-  IND: 'India',           GBR: 'United Kingdom',DEU: 'Germany',
-  FRA: 'France',          JPN: 'Japan',         BRA: 'Brazil',
-  AUS: 'Australia',       CAN: 'Canada',        KOR: 'South Korea',
-  MEX: 'Mexico',          IDN: 'Indonesia',     TUR: 'Turkey',
-  SAU: 'Saudi Arabia',    ZAF: 'South Africa',  NGA: 'Nigeria',
-  PAK: 'Pakistan',        UKR: 'Ukraine',       ITA: 'Italy',
-  ESP: 'Spain',           POL: 'Poland',        ARG: 'Argentina',
-  COL: 'Colombia',        EGY: 'Egypt',         IRN: 'Iran',
-  THA: 'Thailand',        VNM: 'Vietnam',       PHL: 'Philippines',
-  BGD: 'Bangladesh',      SWE: 'Sweden',        NOR: 'Norway',
-  FIN: 'Finland',         NLD: 'Netherlands',   BEL: 'Belgium',
-  CHE: 'Switzerland',     AUT: 'Austria',       PRT: 'Portugal',
-  GRC: 'Greece',          ISR: 'Israel',        IRQ: 'Iraq',
-  MAR: 'Morocco',         DZA: 'Algeria',       ETH: 'Ethiopia',
-  KEN: 'Kenya',           TZA: 'Tanzania',      GHA: 'Ghana',
-  MMR: 'Myanmar',         KHM: 'Cambodia',      AFG: 'Afghanistan',
-  YEM: 'Yemen',           ARE: 'UAE',           KWT: 'Kuwait',
-  QAT: 'Qatar',           JOR: 'Jordan',        KAZ: 'Kazakhstan',
-  UZB: 'Uzbekistan',      MNG: 'Mongolia',      SGP: 'Singapore',
-  MYS: 'Malaysia',        SDN: 'Sudan',         MOZ: 'Mozambique',
-  CMR: 'Cameroon',
-};
 
 // Event arc colors by type
 const ARC_COLORS: Record<string, Color> = {
@@ -83,27 +42,6 @@ const ARC_COLORS: Record<string, Color> = {
 // ─── ISO 3166-1 numeric → alpha-3 lookup ─────────────────────────────────────
 // Needed because world-atlas TopoJSON entities use numeric IDs (no ISO_A3).
 // We enrich each entity after load so the rest of the code stays unchanged.
-const NUMERIC_TO_ISO3: Record<string, string> = {
-  '4':'AFG','8':'ALB','12':'DZA','24':'AGO','32':'ARG','36':'AUS','40':'AUT',
-  '50':'BGD','56':'BEL','64':'BTN','68':'BOL','76':'BRA','100':'BGR','116':'KHM',
-  '120':'CMR','124':'CAN','144':'LKA','152':'CHL','156':'CHN','170':'COL',
-  '180':'COD','188':'CRI','192':'CUB','203':'CZE','208':'DNK','214':'DOM',
-  '218':'ECU','818':'EGY','222':'SLV','231':'ETH','246':'FIN','250':'FRA',
-  '276':'DEU','288':'GHA','300':'GRC','320':'GTM','324':'GIN','332':'HTI',
-  '340':'HND','356':'IND','360':'IDN','364':'IRN','368':'IRQ','372':'IRL',
-  '376':'ISR','380':'ITA','388':'JAM','392':'JPN','400':'JOR','398':'KAZ',
-  '404':'KEN','408':'PRK','410':'KOR','414':'KWT','418':'LAO','422':'LBN',
-  '430':'LBR','434':'LBY','458':'MYS','484':'MEX','504':'MAR','508':'MOZ',
-  '496':'MNG','104':'MMR','516':'NAM','524':'NPL','528':'NLD','554':'NZL',
-  '558':'NIC','566':'NGA','578':'NOR','586':'PAK','591':'PAN','598':'PNG',
-  '600':'PRY','604':'PER','608':'PHL','616':'POL','620':'PRT','630':'PRI',
-  '634':'QAT','642':'ROU','643':'RUS','682':'SAU','686':'SEN','694':'SLE',
-  '706':'SOM','710':'ZAF','724':'ESP','729':'SDN','752':'SWE','756':'CHE',
-  '760':'SYR','764':'THA','792':'TUR','800':'UGA','804':'UKR','784':'ARE',
-  '826':'GBR','840':'USA','858':'URY','860':'UZB','862':'VEN','704':'VNM',
-  '887':'YEM','894':'ZMB','716':'ZWE','702':'SGP','191':'HRV','703':'SVK',
-  '348':'HUN','233':'EST','428':'LVA','440':'LTU',
-};
 
 // entity.id (numeric string) → ISO3 — populated after GeoJSON load
 const entityIso3Map = new Map<string, string>();
@@ -208,7 +146,7 @@ function Tooltip({ tip, mode, values }: {
   mode: ChoroplethMode;
   values: Map<string, number>;
 }) {
-  const name = COUNTRY_NAMES[tip.iso3] ?? tip.iso3;
+  const name = countryName(tip.iso3);
   const val  = values.get(tip.iso3);
   const modeLabel = CHOROPLETH_LABELS[mode];
   const valStr = val !== undefined
@@ -223,15 +161,16 @@ function Tooltip({ tip, mode, values }: {
       left:         tip.x + 14,
       top:          tip.y - 10,
       pointerEvents:'none',
-      background:   'rgba(10,10,20,0.92)',
-      border:       '1px solid rgba(255,255,255,0.12)',
-      borderRadius: 8,
+      background:   'var(--surface-floating)',
+      backdropFilter: 'var(--surface-floating-blur)',
+      border:       'var(--border-strong)',
+      borderRadius: 'var(--radius-panel)',
       padding:      '8px 12px',
       color:        '#fff',
       fontSize:     12,
       zIndex:       20,
       maxWidth:     200,
-      boxShadow:    '0 4px 16px rgba(0,0,0,0.5)',
+      boxShadow:    'var(--shadow-floating)',
     }}>
       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{name}</div>
       <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 4 }}>{tip.iso3}</div>
@@ -260,7 +199,7 @@ function DrillBadge({ country }: { country: string }) {
       color:         '#a78bfa',
       pointerEvents: 'none',
     }}>
-      🔍 Region view — {COUNTRY_NAMES[country] ?? country} · Click a region to inspect
+      🔍 Region view — {countryName(country)} · Click a region to inspect
     </div>
   );
 }
@@ -278,7 +217,7 @@ export default function Globe() {
 
   const {
     choroplethValues, choroplethMode, loadChoropleth,
-    selectedCountry, worldEvents, pulseCountry, setPulseCountry,
+    selectedCountry, worldEvents, pulseCountry, setPulseCountry, setGlobeReady,
   } = useWorldStore();
 
   useRegionStore(); // subscribe so RegionPanel re-renders when selection changes
@@ -288,6 +227,13 @@ export default function Globe() {
   // 15-25s cold. Without this the app is an unexplained black screen for that
   // whole window and reads as broken.
   const [globeStatus, setGlobeStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  // Mirror readiness into the store, and reset on unmount so a remount (e.g.
+  // navigating between the globe and the dashboard) starts from 'loading' again.
+  useEffect(() => {
+    setGlobeReady(globeStatus === 'ready');
+  }, [globeStatus, setGlobeReady]);
+  useEffect(() => () => setGlobeReady(false), [setGlobeReady]);
 
   // ── Apply choropleth colors ──────────────────────────────────────────────
   const applyColors = useCallback(() => {
@@ -310,12 +256,22 @@ export default function Globe() {
   useEffect(() => { applyColors(); }, [choroplethValues]);
 
   // ── Camera fly-to when a country is selected ─────────────────────────────
+  // Fixed altitude, deliberately: viewer.flyTo(entity) frames the polygon tightly
+  // and for most countries ends up below DRILL_ALTITUDE, which silently trips the
+  // admin-1 region view and leaves the user staring at a blank globe while 2MB of
+  // province geometry downloads. COUNTRY_CENTROIDS now covers every mapped
+  // country, so a plain centroid flight works for all of them.
   useEffect(() => {
-    if (!selectedCountry || !viewerRef.current) return;
+    const viewer = viewerRef.current;
+    if (!selectedCountry || !viewer) return;
     const centroid = CENTROIDS[selectedCountry];
     if (!centroid) return;
-    viewerRef.current.camera.flyTo({
+    viewer.camera.flyTo({
       destination: Cartesian3.fromDegrees(centroid[0], centroid[1], 3_200_000),
+      // Look straight down. Without an explicit orientation the camera keeps
+      // whatever heading/pitch it had, which after a long flight can leave it
+      // pointing away from the globe — the user lands on empty starfield.
+      orientation: { heading: 0, pitch: CesiumMath.toRadians(-90), roll: 0 },
       duration: 1.5,
     });
   }, [selectedCountry]);
@@ -607,9 +563,9 @@ function ChoroplethLegend({ mode }: { mode: ChoroplethMode }) {
       position:        'absolute',
       bottom:          32,
       left:            16,
-      background:      'rgba(0,0,0,0.75)',
-      backdropFilter:  'blur(6px)',
-      borderRadius:    10,
+      background:      'var(--surface-floating)',
+      backdropFilter:  'var(--surface-floating-blur)',
+      borderRadius:    'var(--radius-panel)',
       padding:         '12px 16px',
       color:           '#fff',
       fontSize:        12,
@@ -617,7 +573,8 @@ function ChoroplethLegend({ mode }: { mode: ChoroplethMode }) {
       flexDirection:   'column',
       gap:             7,
       minWidth:        195,
-      border:          '1px solid rgba(255,255,255,0.08)',
+      border:          'var(--border-subtle)',
+      boxShadow:       'var(--shadow-floating)',
     }}>
       <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#9ca3af' }}>
         Overlay

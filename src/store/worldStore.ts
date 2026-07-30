@@ -76,6 +76,10 @@ interface WorldStore {
   /** Distinct countries present in the active world. Null until loaded. */
   countriesTracked: number | null;
 
+  /** True once the globe has geometry on screen. Lets other surfaces avoid
+   *  showing instructions that point at an empty canvas. */
+  globeReady: boolean;
+
   // Globe visual feedback
   pulseCountry: string | null;
 
@@ -90,6 +94,7 @@ interface WorldStore {
   loadCountryDecisions: (iso3: string) => Promise<void>;
   loadWorldEvents: (worldId?: string, limit?: number) => Promise<void>;
   loadCountriesTracked: (worldId?: string) => Promise<void>;
+  setGlobeReady: (ready: boolean) => void;
 }
 
 /** Sum of absolute values in a delta object — proxy for "how diverged is this country" */
@@ -108,6 +113,7 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
   countryDecisions: {},
   worldEvents: [],
   countriesTracked: null,
+  globeReady: false,
   pulseCountry: null,
 
   setPulseCountry: (iso3) => set({ pulseCountry: iso3 }),
@@ -176,6 +182,8 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
     const values = await fetchAllCountriesIndicator(wbKey);
     set({ choroplethValues: values });
   },
+
+  setGlobeReady: (ready) => set({ globeReady: ready }),
 
   // Counts distinct countries rather than rows: a country gains a row per
   // simulated year, so country_states holds more rows than countries.

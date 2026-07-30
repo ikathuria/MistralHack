@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorldStore } from '../store/worldStore';
+import { countryName } from '../data/countries';
 import type { CountryState } from '../store/worldStore';
 import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
@@ -42,7 +43,7 @@ function CountryData({ data }: { data: CountryState }) {
     <div style={{ fontSize: 13, lineHeight: 1.6 }}>
       <div style={{ marginBottom: 12, color: '#9ca3af', fontSize: 11 }}>
         Simulated year: <strong style={{ color: '#fff' }}>{data.year}</strong>
-        &nbsp;·&nbsp;Updated: {new Date(data.last_updated).toLocaleDateString()}
+        &nbsp;·&nbsp;Updated: {new Date(data.last_updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
       </div>
       {Object.keys(INDICATOR_LABELS).map(key => (
         <IndicatorRow key={key} name={key} value={data.indicators[key]} />
@@ -88,11 +89,14 @@ export default function CountryPanel() {
       />
     )}
     <div style={{
-      position: 'absolute', top: 0, right: 0, width: 300, height: '100vh',
-      background: 'rgba(10,10,20,0.88)', backdropFilter: 'blur(8px)',
+      // Offset below the app header so the panel does not cover the brand,
+      // search box, and dashboard link; zIndex above the header so the panel
+      // wins where they do overlap.
+      position: 'absolute', top: 64, right: 0, width: 300, height: 'calc(100vh - 64px)',
+      background: 'var(--surface-floating)', backdropFilter: 'var(--surface-floating-blur)',
       color: '#fff', padding: '20px 16px', overflowY: 'auto',
       borderLeft: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box',
-      zIndex: 10,
+      zIndex: 35,
     }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -100,7 +104,7 @@ export default function CountryPanel() {
           <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
             Selected Country
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedCountry}</div>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>{countryName(selectedCountry)}</div>
         </div>
         <button
           onClick={() => selectCountry(null)}
@@ -163,7 +167,7 @@ export default function CountryPanel() {
               cursor: takingOver ? 'default' : 'pointer',
             }}
           >
-            {takingOver ? '⏳ Forking universe…' : `🎮 Take Over ${selectedCountry}`}
+            {takingOver ? '⏳ Forking universe…' : `🎮 Take Over ${countryName(selectedCountry)}`}
           </button>
           <div style={{ color: 'var(--text-faint)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
             {user ? 'Forks the simulation — your parallel universe' : 'Sign in to take control'}

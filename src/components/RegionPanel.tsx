@@ -62,8 +62,8 @@ export default function RegionPanel() {
       border:          '1px solid rgba(255,255,255,0.1)',
       borderRadius:    12,
       color:           '#fff',
-      boxShadow:       '0 8px 32px rgba(0,0,0,0.6)',
-      backdropFilter:  'blur(8px)',
+      boxShadow:       'var(--shadow-floating)',
+      backdropFilter:  'var(--surface-floating-blur)',
       zIndex:          30,
       overflow:        'hidden',
     }}>

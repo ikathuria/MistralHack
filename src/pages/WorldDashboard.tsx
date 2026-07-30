@@ -8,6 +8,7 @@ import Globe from '../components/Globe';
 import CountryPanel from '../components/CountryPanel';
 import RegionPanel from '../components/RegionPanel';
 import { useRegionStore } from '../store/regionStore';
+import { countryName } from '../data/countries';
 
 const WORKER_URL = (import.meta.env.VITE_AI_PROXY_URL as string | undefined) ?? '';
 
@@ -68,9 +69,11 @@ function DivergenceTimeline({ divs }: { divs: Divergence[] }) {
               background: dot, border: '2px solid #111',
             }} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>{d.country_code}</span>
+              <span style={{ fontWeight: 600, fontSize: 13 }}>{countryName(d.country_code)}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-                {new Date(d.published_at).toLocaleDateString()}
+                {new Date(d.published_at).toLocaleDateString('en-GB', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                })}
               </span>
             </div>
             <p style={{ color: '#9ca3af', fontSize: 12, margin: '2px 0 0', lineHeight: 1.4 }}>
@@ -94,6 +97,7 @@ export default function WorldDashboard() {
     loadWorldEvents,
     countriesTracked,
     loadCountriesTracked,
+    globeReady,
   } = useWorldStore();
 
   const { selectedRegion } = useRegionStore();
@@ -141,19 +145,21 @@ export default function WorldDashboard() {
             Live simulation vs. reality tracker
           </div>
 
-          {/* RSS link */}
+          {/* Subscribing is a peripheral action, but it was the only saturated
+              colour on the page and so won the eye ahead of the simulation
+              state. Demoted to a quiet text link. */}
           <a
             href={`${WORKER_URL}/api/world/feed.xml`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontSize: 11, color: '#fb923c', textDecoration: 'none',
-              background: 'rgba(251,146,60,0.1)', padding: '4px 10px',
-              borderRadius: 6, marginBottom: 16,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              minHeight: 24,
+              fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)',
+              textDecoration: 'none', marginBottom: 12,
             }}
           >
-            ◉ RSS Feed
+            ◉ Subscribe via RSS
           </a>
         </div>
 
@@ -219,15 +225,22 @@ export default function WorldDashboard() {
         {selectedCountry && !selectedRegion && <CountryPanel />}
         {selectedRegion && <RegionPanel />}
 
-        {/* Mode label */}
-        <div style={{
-          position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,0.6)', borderRadius: 8,
-          padding: '6px 14px', fontSize: 12, color: '#9ca3af',
-          pointerEvents: 'none',
-        }}>
-          Overlay: {choroplethMode.replace(/_/g, ' ')} · Click a country to inspect
-        </div>
+        {/* Mode label — held back until the globe has geometry, so it does not
+            instruct the visitor to click an empty canvas while it loads. */}
+        {globeReady && (
+          <div style={{
+            position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--surface-floating)',
+            backdropFilter: 'var(--surface-floating-blur)',
+            border: 'var(--border-subtle)',
+            borderRadius: 'var(--radius-panel)',
+            padding: '6px 14px',
+            fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)',
+            pointerEvents: 'none',
+          }}>
+            Overlay: {choroplethMode.replace(/_/g, ' ')} · Click a country to inspect
+          </div>
+        )}
       </div>
     </div>
   );
