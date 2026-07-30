@@ -194,30 +194,76 @@ start the Worker via `npm --prefix workers run dev` so the pinned version in
 
 ### 2. Media layer
 
-> In development — see [`PLAN.md`](PLAN.md) Milestones 12–15. Setup instructions will be
-> verified from a clean clone before submission.
-
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e media/
-pip install genblaze-cli          # NOT included in the genblaze umbrella package
+pip install -e 'media/[cli]'      # [cli] pulls genblaze-cli — NOT in the umbrella package
 ```
 
-Media-layer environment variables:
+Copy `media/.env.example` to `media/.env` and fill in the keys (see "Going live"
+below). Exercise the whole chain without generating anything:
 
-```
-B2_KEY_ID, B2_APP_KEY, B2_BUCKET, B2_REGION
-GMI_API_KEY                       # console.gmicloud.ai
-ELEVENLABS_API_KEY                # optional — anchor TTS
-STABILITY_API_KEY                 # optional — music bed
+```bash
+rs-media front-page --nation IND --year 2027 --dry-run
 ```
 
 Verify provenance on any generated asset:
 
 ```bash
-genblaze verify broadcast.mp4
+genblaze verify broadcast.mp4      # re-derives the manifest hash; shows the simulation.* fields
 genblaze extract broadcast.mp4
 ```
+
+---
+
+## Going live (credentials + deploy)
+
+Everything below the network boundary is built and tested; these are the steps
+that need accounts. Two credentials for media, then the deploy. ~30 minutes.
+
+### A. Media credentials → first generated asset
+
+1. **Backblaze B2** — create a bucket (public, so the frontend can read images
+   and the index) and an application key scoped to it. Put in `media/.env`:
+   `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET`, `B2_REGION` (e.g. `us-west-004`).
+2. **GMICloud** — key from [console.gmicloud.ai](https://console.gmicloud.ai)
+   → `GMI_API_KEY` in `media/.env`.
+3. Generate the first real front page and confirm provenance:
+   ```bash
+   rs-media front-page --nation IND --year 2027       # writes an image + manifest to B2
+   ```
+   This closes the M12/M13 checkpoint: an image in B2 whose manifest hash
+   carries `simulation.fork_id` and `simulation.real_world_data_cutoff`.
+4. Point the frontend at the bucket so the wall can read it — set
+   `VITE_B2_PUBLIC_BASE` (the bucket's public URL base) in the root `.env`.
+
+### B. Deploy the Worker (Cloudflare)
+
+```bash
+npm --prefix workers exec wrangler login      # interactive, one time
+npm --prefix workers run deploy               # wrangler deploy
+# production secrets (values, not the local .dev.vars):
+for k in GROQ_API_KEY SUPABASE_URL SUPABASE_SERVICE_KEY NEWS_API_KEY WORKER_SECRET; do
+  npm --prefix workers exec wrangler secret put "$k"
+done
+```
+
+Set `VITE_AI_PROXY_URL` in the root `.env` to the deployed `workers.dev` URL.
+
+### C. Deploy the frontend (GitHub Pages)
+
+1. Repo **Settings → Pages → Source: GitHub Actions** (enables the workflow at
+   `.github/workflows/deploy-pages.yml`, which already builds green).
+2. Repo **Settings → Secrets and variables → Actions**, add: `VITE_SUPABASE_URL`,
+   `VITE_SUPABASE_ANON_KEY`, `VITE_AI_PROXY_URL`, `VITE_B2_PUBLIC_BASE`,
+   and optionally `VITE_CESIUM_ION_TOKEN`.
+3. For the monthly-sync workflow, also add `WORKER_URL` and `WORKER_SECRET`.
+4. Push to `main` (or re-run the workflow) → site publishes at
+   `https://<user>.github.io/RealityShift/`.
+
+> **If you skip the Worker deploy:** the site still works read-only (globe,
+> dashboard, front-page wall all read Supabase/B2 directly). Only fork
+> creation and "Simulate Year" need the Worker, since those make server-side
+> LLM calls.
 
 ---
 
