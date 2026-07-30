@@ -8,9 +8,20 @@ of each phase.
 **Ground rule: no manufactured issues.** Low-quality noise is worse than silence. Everything
 here is real friction hit during a real integration, with reproduction steps.
 
-**Environment:** macOS 27.0, Python 3.11 venv, `pip install genblaze` on 2026-07-27
-→ resolved `genblaze 0.4.4`, `genblaze-core 0.3.7`, `genblaze-s3 0.3.6`.
-Repo HEAD at audit time: v0.6.0 release wave (tagged 2026-07-22).
+**Environment:** macOS 27.0, Python venv, `pip install genblaze`.
+On 2026-07-27 this resolved `genblaze 0.4.4 / genblaze-core 0.3.7 / genblaze-s3 0.3.6`;
+on 2026-07-30 a fresh install resolved `genblaze 0.4.5 / genblaze-core 0.3.8 / genblaze-s3 0.3.6`
+— the umbrella and core moved twice in three days. Repo HEAD at audit time: v0.6.0
+release wave (tagged 2026-07-22).
+
+**Linchpin verified on the installed package (core 0.3.8, schema 1.5).** The
+integration depends entirely on `Run.metadata` being inside the canonical hash.
+The repo comment (`models/manifest.py`) says so, but the repo is a different
+version than PyPI resolves, so this was verified directly on the installed core:
+building a `Run` with `metadata={"simulation": {...}}`, hashing via
+`Manifest.from_run`, and confirming the hash changes when `simulation.fork_id`
+or `simulation.real_world_data_cutoff` changes. It does. `Pipeline.metadata(**kw)`
+is present and merges into `Run.metadata`. This held across both 0.3.7 and 0.3.8.
 
 ---
 

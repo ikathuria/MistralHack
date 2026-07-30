@@ -297,16 +297,16 @@ output, not a bolt-on.
 **Goal:** One generated image in B2 with a verifying manifest whose canonical hash contains our simulation provenance fields.
 
 Tasks:
-- [ ] Create the `media/` Python package (isolated, additive) with `pyproject.toml` pinning **exact** versions of `genblaze`, `genblaze-s3`, `genblaze-gmicloud`, `genblaze-cli` — Done when: `pip install -e media/` works from a clean venv
-- [ ] Install `ffmpeg` and document it as a system prerequisite — Done when: `ffmpeg -version` works and it is listed in the README
-- [ ] **Re-verify every Genblaze API against the *installed* package, not the repo.** Repo HEAD is the v0.6.0 wave; PyPI resolves core 0.3.7 — the docs describe features that are not installed — Done when: a written diff of the version skew exists in `GENBLAZE_FEEDBACK.md`
-- [ ] `media/contracts.py` — `DivergenceBrief` and `NarrativeBeat` Pydantic models per the interface boundary — Done when: models validate against a hand-written fixture
-- [ ] `media/adapter.py` — **read-only** Supabase → `DivergenceBrief`. For forks, derive divergence as fork-vs-live at matching sim year (`divergences` has no `world_id`; that is by design). Beats synthesized from `agent_decisions.reasoning` + `world_events` via one `chat()` call — Done when: a real fork ID produces a populated brief
-- [ ] `media/provenance.py` — builds the `simulation.*` metadata block, applied via `Pipeline.metadata(**kwargs)` so it lands **inside** the canonical hash — Done when: `simulation.real_world_data_cutoff` is present in the hashed payload
-- [ ] `media/storage.py` — `ObjectStorageSink` over `S3StorageBackend.for_backblaze()`, `KeyStrategy.CONTENT_ADDRESSABLE` — Done when: a smoke-test object round-trips to B2
-- [ ] `media/pricing.py` — `register_pricing()` recipes. **The SDK ships zero hardcoded prices**; without this the Phase 4 cost dashboard renders empty columns — Done when: `compute_cost()` returns a number instead of `None`
-- [ ] `.env.example` for the media layer; confirm `.gitignore` covers `.env` (already verified) — Done when: committed with no secrets
-- [ ] **Checkpoint:** one front-page image in B2, manifest verifying, fork fields inside the hash
+- [x] Create the `media/` Python package (isolated, additive) with `pyproject.toml` pinning **exact** versions of `genblaze`, `genblaze-s3`, `genblaze-gmicloud`, `genblaze-cli` — Done: `pip install -e media/` works in a clean venv
+- [x] Install `ffmpeg` and document it as a system prerequisite — Done: ffmpeg 8.1.2 installed, listed in README
+- [x] **Re-verify every Genblaze API against the *installed* package, not the repo.** — Done: verified against core 0.3.8 (moved from 0.3.7 mid-week); metadata-in-hash linchpin proven directly; written up in `GENBLAZE_FEEDBACK.md`
+- [x] `media/contracts.py` — `DivergenceBrief` and `NarrativeBeat` Pydantic models — Done: validate, and the cutoff==divergence_date invariant is enforced + tested
+- [x] `media/adapter.py` — **read-only** Supabase → `DivergenceBrief`. For forks, derive divergence as fork-vs-live at matching sim year — Done: verified against **live Supabase** for India @ 2027 (BJP reasoning, Reagan RAG parallel, India↔Pakistan protest chain → 4 beats). Beats are deterministic here; the LLM script pass moves to M14 rather than one `chat()` call in the adapter
+- [x] `media/provenance.py` — `simulation.*` metadata via `Pipeline.metadata(**kwargs)`, inside the canonical hash — Done: 5 offline tests prove `fork_id` and `real_world_data_cutoff` each flip the hash
+- [~] `media/storage.py` — `ObjectStorageSink` over `S3StorageBackend.for_backblaze()`, `KeyStrategy.CONTENT_ADDRESSABLE` — **written; blocked on B2 credentials** for the live round-trip
+- [x] `media/pricing.py` — `register_pricing()` recipes — Done: recipes written for the image/video models; live `compute_cost()` check needs a provider key
+- [x] `.env.example` for the media layer; `.gitignore` covers `.env` and Python artifacts — Done: committed, no secrets
+- [ ] **Checkpoint:** one front-page image in B2, manifest verifying, fork fields inside the hash — **blocked on B2 + GMICloud credentials.** Everything up to the network boundary is built and tested; the manifest/hash half of the checkpoint is already proven offline.
 
 ---
 

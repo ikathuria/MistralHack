@@ -26,6 +26,14 @@ dist-ssr
 **/.wrangler/
 supabase/.temp/
 
+# Python (media layer)
+__pycache__/
+*.py[cod]
+.venv/
+**/.venv/
+*.egg-info/
+.pytest_cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
