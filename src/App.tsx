@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useWorldStore } from './store/worldStore';
+import { readVisitorContext } from './lib/locale';
 import Globe from './components/Globe';
 import CountryPanel from './components/CountryPanel';
 import AppHeader from './components/AppHeader';
@@ -8,6 +10,19 @@ import WorldDashboard from './pages/WorldDashboard';
 import GamePage from './pages/GamePage';
 
 function GlobePage() {
+  const { globeReady, selectedCountry, selectCountry } = useWorldStore();
+  const openedOn = useRef(false);
+
+  // Open on the visitor's own country once the globe can actually fly there.
+  // Guessed from the browser timezone — no permission prompt, no network call.
+  useEffect(() => {
+    if (!globeReady || openedOn.current || selectedCountry) return;
+    const { iso3 } = readVisitorContext();
+    if (!iso3) return;
+    openedOn.current = true;
+    selectCountry(iso3);
+  }, [globeReady, selectedCountry, selectCountry]);
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <Globe />

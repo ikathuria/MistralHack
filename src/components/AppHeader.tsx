@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CountrySearch from './CountrySearch';
+import { formatLocalTime, readVisitorContext } from '../lib/locale';
 
 /**
  * Orientation bar for the globe view.
@@ -12,6 +14,15 @@ import CountrySearch from './CountrySearch';
  * main interaction was discoverable from the landing page.
  */
 export default function AppHeader() {
+  const visitor = useMemo(() => readVisitorContext(), []);
+  const [clock, setClock] = useState(() => formatLocalTime());
+
+  // Minute resolution is enough; a per-second tick would re-render for nothing.
+  useEffect(() => {
+    const id = window.setInterval(() => setClock(formatLocalTime()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <header
       style={{
@@ -32,6 +43,20 @@ export default function AppHeader() {
         <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
           AI agents run every country · pick one to take over
         </div>
+      </div>
+
+      {/* Where and when the visitor is. The globe is lit by the real sun
+          position, so this explains why their own country is in daylight or
+          darkness rather than leaving it looking like a rendering fault. */}
+      <div style={{
+        pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)',
+        paddingLeft: 4,
+      }}>
+        <span aria-hidden>{visitor.isDay ? '☀️' : '🌙'}</span>
+        <span>
+          {visitor.country ?? visitor.timeZone} · {clock}
+        </span>
       </div>
 
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
