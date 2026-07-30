@@ -173,6 +173,25 @@ Note the globe takes 15–25 seconds on first load — it fetches country geomet
 from a CDN. Without `VITE_CESIUM_ION_TOKEN` there is no base imagery, so the
 globe renders as dark country polygons over the starfield rather than as Earth.
 
+### Troubleshooting
+
+**`wrangler dev` dies with `table _cf_ALARM has 3 columns but 2 values were supplied`**
+
+Miniflare's local state was written by a newer wrangler than the one now
+running, and the schemas are incompatible. Delete the state and restart:
+
+```bash
+rm -rf workers/.wrangler
+```
+
+Nothing is lost — no KV, Durable Object, D1, or R2 bindings are declared, so
+that directory holds only local cache. All real state lives in Supabase.
+
+The usual cause is running `npx wrangler` from the repo root, where npx cannot
+see `workers/node_modules` and downloads a different version instead. Always
+start the Worker via `npm --prefix workers run dev` so the pinned version in
+`workers/package.json` is the one that runs.
+
 ### 2. Media layer
 
 > In development — see [`PLAN.md`](PLAN.md) Milestones 12–15. Setup instructions will be
