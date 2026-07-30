@@ -12,10 +12,35 @@
   --text-muted: #8b94a3;     /*  6.44:1 */
   --text-faint: #7b8494;     /*  5.22:1 */
 
-  /* Surfaces */
+  /* Type scale. Roles are fixed so new UI doesn't invent sizes:
+     xs  = uppercase labels, metadata, timestamps
+     sm  = secondary body, card text
+     md  = default body
+     lg  = panel and section titles
+     xl  = stat figures  */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 28px;
+
+  /* Surfaces. Two elevations only.
+     `panel` is for inline surfaces inside an opaque parent (dashboard cards);
+     `floating` is for anything overlaying the globe, where the blur is what
+     keeps text legible against arbitrary map colour underneath. */
   --surface-base: #0a0a14;
-  --surface-raised: rgba(255, 255, 255, 0.04);
-  --surface-raised-strong: rgba(255, 255, 255, 0.08);
+  --surface-panel: rgba(255, 255, 255, 0.04);
+  --surface-panel-strong: rgba(255, 255, 255, 0.08);
+  --surface-floating: rgba(10, 10, 20, 0.82);
+  --surface-floating-blur: blur(10px);
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.08);
+  --border-strong: 1px solid rgba(255, 255, 255, 0.14);
+  --radius-panel: 10px;
+  --shadow-floating: 0 8px 28px rgba(0, 0, 0, 0.55);
+
+  /* Accent — the one interactive colour. */
+  --accent: #6366f1;
+  --accent-text: #a5b4fc;
 }
 
 *, *::before, *::after {
@@ -33,6 +58,10 @@ html, body, #root {
 
 body {
   font-family: var(--font-sans);
+  /* Without this, text inherits the browser default (black) and any surface
+     that does not set its own colour renders black-on-black. The dashboard set
+     color on its own root; the globe route did not. */
+  color: var(--text-primary);
   /* Keeps the stat-card figures from shifting width as values change. */
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
