@@ -1,3 +1,23 @@
+:root {
+  /* No font-family was previously declared anywhere, so the whole app rendered
+     in the browser default serif (computed: "Times"). */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Text colours, all verified against the app background #0a0a14.
+     The two previous values were inaccessible: #6b7280 measured 4.07:1 (fails
+     WCAG AA body text) and #4b5563 measured 2.61:1 (fails AA at any size). */
+  --text-primary: #ffffff;   /* 19.69:1 */
+  --text-secondary: #9ca3af; /*  7.76:1 */
+  --text-muted: #8b94a3;     /*  6.44:1 */
+  --text-faint: #7b8494;     /*  5.22:1 */
+
+  /* Surfaces */
+  --surface-base: #0a0a14;
+  --surface-raised: rgba(255, 255, 255, 0.04);
+  --surface-raised-strong: rgba(255, 255, 255, 0.08);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -9,4 +29,19 @@ html, body, #root {
   height: 100%;
   overflow: hidden;
   background: #000;
+}
+
+body {
+  font-family: var(--font-sans);
+  /* Keeps the stat-card figures from shifting width as values change. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Visible keyboard focus. The globe is mouse-only, so every other control
+   needs to be reachable and obviously focused. */
+:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
 }
