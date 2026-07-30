@@ -314,14 +314,14 @@ Tasks:
 **Goal:** A wall of newspaper front pages from a world that doesn't exist.
 
 Tasks:
-- [ ] `media/pipelines/front_page.py` — `DivergenceBrief` → newspaper front page prompt → image — Done when: one plausible front page generates for a real fork-month
-- [ ] Visible synthetic-content watermark composited into every image — Done when: no generated image lacks the mark
-- [ ] `fallback_models` chain configured and **proven by forcing a failure** — Done when: a deliberately broken primary model still produces an asset via the fallback
-- [ ] Batch generation across N nations for a fork-month via `Pipeline.abatch_run()`; `StepCache` enabled so prompt tweaks don't re-bill unchanged steps — Done when: 12 sim-months generate in one command
-- [ ] `media/index.py` — writes the per-fork index `index/{world_id}/media.json` to B2 (`{sim_date, country, kind, b2_url, manifest_uri, canonical_hash}`). **This replaces the proposed `media_assets` Postgres table** — the batch generator is the sole writer, and the frontend wants the whole set anyway — Done when: the index is a single public GET
-- [ ] `src/lib/mediaIndex.ts` — typed fetch of the B2 index — Done when: returns typed entries for a fork
-- [ ] `src/components/FrontPageWall.tsx` — grid view, filterable by fork and sim-date — Done when: the wall renders from B2 URLs with no Supabase round-trip
-- [ ] **Checkpoint:** the front-page wall renders for one fork across ≥12 sim-months
+- [x] `media/pipelines/front_page.py` — `DivergenceBrief` → newspaper front page prompt → image — Done: pipeline built; prompt + provenance verified end-to-end via `rs-media front-page --dry-run` against live Supabase ("The India Dispatch, 2027"). Live image generation needs GMI key
+- [x] Visible synthetic-content watermark composited into every image — Done: `watermark.py` burns an "AI-GENERATED · RealityShift" band into the pixels (provider-independent, tested)
+- [~] `fallback_models` chain configured and **proven by forcing a failure** — chain configured (`seedream-5.0-lite` → `flux-1-schnell`); the forced-failure proof needs a live provider key
+- [ ] Batch generation across N nations via `Pipeline.abatch_run()` + `StepCache` — not started
+- [x] `media/index.py` — per-fork index `index/{world_id}/media.json`, replacing the proposed `media_assets` table — Done: index build/serialize/sort + result→entry extraction, tested; live B2 write needs keys
+- [ ] `src/lib/mediaIndex.ts` — typed fetch of the B2 index — not started
+- [ ] `src/components/FrontPageWall.tsx` — grid view, filterable by fork and sim-date — not started
+- [ ] **Checkpoint:** the front-page wall renders for one fork across ≥12 sim-months — blocked on B2 + GMICloud credentials
 
 ---
 
