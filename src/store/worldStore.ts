@@ -73,6 +73,9 @@ interface WorldStore {
   // World events feed
   worldEvents: WorldEvent[];
 
+  /** Distinct countries present in the active world. Null until loaded. */
+  countriesTracked: number | null;
+
   // Globe visual feedback
   pulseCountry: string | null;
 
@@ -86,6 +89,7 @@ interface WorldStore {
   loadRecentDivergences: (limit?: number) => Promise<void>;
   loadCountryDecisions: (iso3: string) => Promise<void>;
   loadWorldEvents: (worldId?: string, limit?: number) => Promise<void>;
+  loadCountriesTracked: (worldId?: string) => Promise<void>;
 }
 
 /** Sum of absolute values in a delta object — proxy for "how diverged is this country" */
@@ -103,6 +107,7 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
   divergenceMagnitudes: new Map(),
   countryDecisions: {},
   worldEvents: [],
+  countriesTracked: null,
   pulseCountry: null,
 
   setPulseCountry: (iso3) => set({ pulseCountry: iso3 }),
@@ -170,6 +175,21 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
     const wbKey = (mode === 'divergence' ? 'gdp_per_capita' : mode) as keyof CountryIndicators;
     const values = await fetchAllCountriesIndicator(wbKey);
     set({ choroplethValues: values });
+  },
+
+  // Counts distinct countries rather than rows: a country gains a row per
+  // simulated year, so country_states holds more rows than countries.
+  loadCountriesTracked: async (worldId) => {
+    if (!supabase) return;
+    const id = worldId ?? get().activeWorldId;
+    const { data, error } = await supabase
+      .from('country_states')
+      .select('country_code')
+      .eq('world_id', id);
+
+    if (error || !data) return;
+    const codes = new Set((data as { country_code: string }[]).map(r => r.country_code));
+    set({ countriesTracked: codes.size });
   },
 
   loadRecentDivergences: async (limit = 50) => {

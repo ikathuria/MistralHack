@@ -1,4 +1,5 @@
 import type { Divergence } from '../store/worldStore';
+import { COUNTRY_NAMES } from './Globe';
 
 function DeltaRow({ label, value }: { label: string; value: number }) {
   const positive = value > 0;
@@ -33,11 +34,19 @@ export default function DivergenceCard({ div }: { div: Divergence }) {
             background: severeColor,
             width: 8, height: 8, borderRadius: '50%', display: 'inline-block',
           }} />
-          <span style={{ fontWeight: 600, fontSize: 14 }}>{div.country_code}</span>
-          <span style={{ color: '#6b7280', fontSize: 12 }}>sim yr {div.sim_year}</span>
+          {/* ISO3 codes are developer-facing; lead with the readable name and
+              keep the code as secondary metadata. */}
+          <span style={{ fontWeight: 600, fontSize: 14 }}>
+            {COUNTRY_NAMES[div.country_code] ?? div.country_code}
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>sim yr {div.sim_year}</span>
         </div>
-        <span style={{ color: '#4b5563', fontSize: 11 }}>
-          {new Date(div.published_at).toLocaleDateString()}
+        {/* Explicit day-month-year: toLocaleDateString() renders 28/07/2026,
+            which is ambiguous across locales. */}
+        <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>
+          {new Date(div.published_at).toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric',
+          })}
         </span>
       </div>
 

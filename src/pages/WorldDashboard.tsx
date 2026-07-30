@@ -18,9 +18,9 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
       border: '1px solid rgba(255,255,255,0.08)',
       borderRadius: 10, padding: '16px 20px', flex: 1, minWidth: 160,
     }}>
-      <div style={{ color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+      <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{value}</div>
-      {sub && <div style={{ color: '#4b5563', fontSize: 11, marginTop: 2 }}>{sub}</div>}
+      {sub && <div style={{ color: 'var(--text-faint)', fontSize: 11, marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -35,7 +35,7 @@ function TopDivergences({ divs }: { divs: Divergence[] }) {
     .slice(0, 5);
 
   if (!top5.length) {
-    return <p style={{ color: '#4b5563', fontSize: 13 }}>No divergences recorded yet. Run the monthly sync to populate this.</p>;
+    return <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>No divergences recorded yet. Run the monthly sync to populate this.</p>;
   }
 
   return (
@@ -69,7 +69,7 @@ function DivergenceTimeline({ divs }: { divs: Divergence[] }) {
             }} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
               <span style={{ fontWeight: 600, fontSize: 13 }}>{d.country_code}</span>
-              <span style={{ color: '#6b7280', fontSize: 11 }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
                 {new Date(d.published_at).toLocaleDateString()}
               </span>
             </div>
@@ -92,6 +92,8 @@ export default function WorldDashboard() {
     selectedCountry,
     worldEvents,
     loadWorldEvents,
+    countriesTracked,
+    loadCountriesTracked,
   } = useWorldStore();
 
   const { selectedRegion } = useRegionStore();
@@ -102,6 +104,7 @@ export default function WorldDashboard() {
   useEffect(() => {
     loadRecentDivergences(50);
     loadWorldEvents('live', 40);
+    loadCountriesTracked('live');
     setChoroplethMode('divergence');
     return () => setChoroplethMode('gdp_per_capita'); // reset on unmount
   }, []);
@@ -130,11 +133,11 @@ export default function WorldDashboard() {
             <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.5 }}>
               🌍 RealityShift
             </div>
-            <Link to="/" style={{ color: '#6b7280', fontSize: 12, textDecoration: 'none' }}>
+            <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 12, textDecoration: 'none' }}>
               ← Play
             </Link>
           </div>
-          <div style={{ color: '#4b5563', fontSize: 12, marginBottom: 16 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 12, marginBottom: 16 }}>
             Live simulation vs. reality tracker
           </div>
 
@@ -154,15 +157,29 @@ export default function WorldDashboard() {
           </a>
         </div>
 
-        {/* Stats */}
-        <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
+        {/* Stats — lead with what the simulation has actually produced. The
+            divergence count is legitimately 0 much of the time, and a headline
+            zero reads as "nothing here" rather than "tracking reality closely". */}
+        <div style={{ padding: '0 16px 8px', display: 'flex', gap: 8 }}>
           <StatCard
             label="Sim Year"
             value={simYear ? String(simYear) : '—'}
             sub="latest agent cycle"
           />
           <StatCard
-            label="Divergences"
+            label="Countries"
+            value={countriesTracked !== null ? String(countriesTracked) : '—'}
+            sub="autonomous agents"
+          />
+        </div>
+        <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
+          <StatCard
+            label="World Events"
+            value={String(worldEvents.length)}
+            sub="agent interactions"
+          />
+          <StatCard
+            label="Diverged"
             value={String(divergedCount)}
             sub={`of ${recentDivergences.length} checked`}
           />
@@ -177,7 +194,7 @@ export default function WorldDashboard() {
               style={{
                 flex: 1, padding: '6px 0', borderRadius: 6, border: 'none',
                 background: activeTab === tab ? 'rgba(255,255,255,0.1)' : 'transparent',
-                color: activeTab === tab ? '#fff' : '#6b7280',
+                color: activeTab === tab ? '#fff' : 'var(--text-muted)',
                 cursor: 'pointer', fontSize: 12, fontWeight: 600,
               }}
             >
