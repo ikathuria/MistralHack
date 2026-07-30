@@ -118,23 +118,60 @@ cp .env.example .env
 | `SUPABASE_SERVICE_KEY` | Supabase — **worker only, never the frontend** |
 | `NEWS_API_KEY` | [newsapi.org/register](https://newsapi.org/register) (free tier) |
 
-Run it:
+**The Worker does not read `.env`.** `wrangler dev` loads its secrets from
+`workers/.dev.vars`, so the worker-side variables need to be copied there as well
+or every protected endpoint returns 401 and every database call fails:
+
+```bash
+cat > workers/.dev.vars <<'EOF'
+GROQ_API_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_KEY=
+NEWS_API_KEY=
+WORKER_SECRET=
+EOF
+```
+
+`WORKER_SECRET` is any long random string — it just has to match between
+`.env` and `workers/.dev.vars`. Generate one with:
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+`.dev.vars` is gitignored. Never commit it.
+
+Start the frontend (http://localhost:5173):
 
 ```bash
 npm run dev
 ```
 
-The Worker runs separately:
+Start the Worker in a second terminal (http://localhost:8787):
 
 ```bash
-cd workers && npm install && npx wrangler dev
+npm --prefix workers install && npm --prefix workers run dev
 ```
 
-Seed the live world with real World Bank data (one time):
+Seed the live world with real World Bank data — one time, takes about 5 seconds
+and loads ~210 countries:
 
 ```bash
-curl -X POST http://localhost:8787/api/seed -H "x-worker-secret: $WORKER_SECRET"
+curl -X POST http://localhost:8787/api/seed -H "x-worker-secret: $(grep '^WORKER_SECRET=' .env | cut -d= -f2-)"
 ```
+
+Advance one country by a simulated year (this is the agent loop):
+
+```bash
+curl -X POST http://localhost:8787/api/agents/run \
+  -H "x-worker-secret: $(grep '^WORKER_SECRET=' .env | cut -d= -f2-)" \
+  -H 'Content-Type: application/json' \
+  -d '{"world_id":"live","country_code":"IND"}'
+```
+
+Note the globe takes 15–25 seconds on first load — it fetches country geometry
+from a CDN. Without `VITE_CESIUM_ION_TOKEN` there is no base imagery, so the
+globe renders as dark country polygons over the starfield rather than as Earth.
 
 ### 2. Media layer
 
