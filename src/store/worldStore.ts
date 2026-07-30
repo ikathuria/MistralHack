@@ -49,6 +49,10 @@ export interface WorldEvent {
 }
 
 export type ChoroplethMode =
+  // 'none' leaves the illustrated Earth texture visible. Data overlays are
+  // opt-in: painted country fills and a cartoon globe compete for the same
+  // surface, and always-on fills bury the imagery underneath.
+  | 'none'
   | 'gdp_per_capita'
   | 'military_spend'
   | 'unemployment'
@@ -105,7 +109,7 @@ function deltaMagnitude(delta: Record<string, number>): number {
 export const useWorldStore = create<WorldStore>((set, get) => ({
   selectedCountry: null,
   countryData: {},
-  choroplethMode: 'gdp_per_capita',
+  choroplethMode: 'none',
   choroplethValues: new Map(),
   activeWorldId: 'live',
   recentDivergences: [],
@@ -154,6 +158,13 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
   loadChoropleth: async () => {
     const mode = get().choroplethMode;
     const worldId = get().activeWorldId;
+
+    // No overlay selected — clear the values so country fills go transparent
+    // and the illustrated Earth shows through. Also skips a pointless query.
+    if (mode === 'none') {
+      set({ choroplethValues: new Map() });
+      return;
+    }
 
     if (mode === 'divergence' && worldId === 'live') {
       set({ choroplethValues: new Map(get().divergenceMagnitudes) });

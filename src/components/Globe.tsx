@@ -14,6 +14,8 @@ import {
   ConstantProperty,
   ArcType,
   EllipsoidTerrainProvider,
+  ImageryLayer,
+  SingleTileImageryProvider,
   Math as CesiumMath,
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
@@ -130,7 +132,10 @@ function drawArc(viewer: Viewer, event: WorldEvent, durationMs = 4000): void {
 
 // ─── Choropleth helpers ───────────────────────────────────────────────────────
 function choroplethColor(value: number | undefined, min: number, max: number): Color {
-  if (value === undefined || max === min) return Color.fromCssColorString('#0f172a').withAlpha(0.85);
+  // Fully transparent rather than dark grey: with no overlay selected the
+  // illustrated Earth beneath should be visible, not covered by 200 grey plates.
+  if (value === undefined) return Color.TRANSPARENT;
+  if (max === min) return Color.fromCssColorString('#0f172a').withAlpha(0.85);
   // Log scale so mid-range countries get distinct colors (linear scale clusters everything near green)
   const logMin = Math.log1p(min);
   const logMax = Math.log1p(max);
@@ -368,8 +373,31 @@ export default function Globe() {
       creditContainer:       document.createElement('div'),
       // Flat ellipsoid — prevents terrain tiles from depth-occluding polygon fills
       terrainProvider:       new EllipsoidTerrainProvider(),
+      // Illustrated Earth as the base layer. A single equirectangular PNG needs
+      // no tile server and no Cesium Ion token, and being opaque it also removes
+      // the failed-Ion-imagery case that left the globe rendering as bare space.
+      baseLayer: new ImageryLayer(
+        new SingleTileImageryProvider({
+          url: `${import.meta.env.BASE_URL}earth-cartoon.png`,
+          tileWidth: 4096,
+          tileHeight: 2048,
+        }),
+      ),
     });
+
+    // Real sun position, so the visitor's own daylight is reflected on the globe.
+    // This was previously fighting us — dimming translucent plates over black —
+    // but over opaque imagery it is the day/night terminator we actually want.
+    viewer.scene.globe.enableLighting = true;
+    viewer.scene.globe.baseColor = Color.fromCssColorString('#0b1b2b');
+    if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.brightnessShift = 0.15;
     viewerRef.current = viewer;
+
+    // Dev-only handle. The globe's render state is otherwise unreachable from
+    // outside React, which makes camera and imagery problems hard to diagnose.
+    if (import.meta.env.DEV) {
+      (window as unknown as { __viewer?: Viewer }).__viewer = viewer;
+    }
 
 
     // world-atlas TopoJSON: simplified geometry + numeric ISO IDs.
@@ -394,22 +422,29 @@ export default function Globe() {
       sourceRef.current = source;
       applyColors();
 
-      // The fetch resolving is NOT the same as the globe being visible: Cesium
-      // builds the polygon primitives over subsequent frames, so flipping to
-      // 'ready' here still leaves several seconds of black screen.
-      // dataSourceDisplay.ready is the documented signal that every data source
-      // has primitives ready to render.
+      // The fetch resolving is not the same as the globe being painted, so wait
+      // for a couple of rendered frames before clearing the loading state.
+      //
+      // Deliberately NOT gated on viewer.dataSourceDisplay.ready: that property
+      // is updated during rendering, so in any environment where frames are not
+      // ticking (a hidden tab, a throttled automation pane) it stays false
+      // forever and the spinner never clears. The short timeout is the backstop.
       const viewer = viewerRef.current!;
-      const started = Date.now();
-      const waitForFirstPaint = () => {
+      let frames = 0;
+      const onFrame = () => {
         if (viewer.isDestroyed()) return;
-        // Give up after 30s rather than pinning the overlay open forever.
-        if (viewer.dataSourceDisplay.ready || Date.now() - started > 30_000) {
-          viewer.scene.postRender.removeEventListener(waitForFirstPaint);
+        if (++frames >= 2) {
+          viewer.scene.postRender.removeEventListener(onFrame);
           setGlobeStatus('ready');
         }
       };
-      viewer.scene.postRender.addEventListener(waitForFirstPaint);
+      viewer.scene.postRender.addEventListener(onFrame);
+      window.setTimeout(() => {
+        if (!viewer.isDestroyed()) {
+          viewer.scene.postRender.removeEventListener(onFrame);
+          setGlobeStatus('ready');
+        }
+      }, 5000);
     }).catch(err => {
       console.error('[Globe] GeoJSON load failed:', err);
       setGlobeStatus('error');
@@ -548,6 +583,7 @@ function GlobeStatus({ status }: { status: 'loading' | 'error' }) {
 
 // ─── Choropleth legend ────────────────────────────────────────────────────────
 const CHOROPLETH_LABELS: Record<ChoroplethMode, string> = {
+  none:             'None — show the Earth',
   gdp_per_capita:   'GDP per Capita (USD)',
   military_spend:   'Military Spend (% GDP)',
   unemployment:     'Unemployment (%)',
