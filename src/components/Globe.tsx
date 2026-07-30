@@ -44,7 +44,7 @@ const CENTROIDS: Record<string, [number, number]> = {
   MYS: [110, 4],    SDN: [30, 15],    MOZ: [35, -18],   CMR: [12, 6],
 };
 
-const COUNTRY_NAMES: Record<string, string> = {
+export const COUNTRY_NAMES: Record<string, string> = {
   USA: 'United States',   CHN: 'China',         RUS: 'Russia',
   IND: 'India',           GBR: 'United Kingdom',DEU: 'Germany',
   FRA: 'France',          JPN: 'Japan',         BRA: 'Brazil',
@@ -234,12 +234,12 @@ function Tooltip({ tip, mode, values }: {
       boxShadow:    '0 4px 16px rgba(0,0,0,0.5)',
     }}>
       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{name}</div>
-      <div style={{ color: '#6b7280', fontSize: 10, marginBottom: 4 }}>{tip.iso3}</div>
+      <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 4 }}>{tip.iso3}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <span style={{ color: '#9ca3af' }}>{modeLabel.split(' (')[0]}</span>
         <span style={{ fontWeight: 600 }}>{valStr}</span>
       </div>
-      <div style={{ color: '#4b5563', fontSize: 10, marginTop: 5 }}>Click to explore →</div>
+      <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 5 }}>Click to explore →</div>
     </div>
   );
 }
@@ -284,6 +284,10 @@ export default function Globe() {
   useRegionStore(); // subscribe so RegionPanel re-renders when selection changes
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [drillCountry, setDrillCountry] = useState<string | null>(null);
+  // Cesium boots and then pulls ~110m country geometry from a CDN, which takes
+  // 15-25s cold. Without this the app is an unexplained black screen for that
+  // whole window and reads as broken.
+  const [globeStatus, setGlobeStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   // ── Apply choropleth colors ──────────────────────────────────────────────
   const applyColors = useCallback(() => {
@@ -433,7 +437,27 @@ export default function Globe() {
       viewerRef.current!.dataSources.add(source);
       sourceRef.current = source;
       applyColors();
-    }).catch(err => console.error('[Globe] GeoJSON load failed:', err));
+
+      // The fetch resolving is NOT the same as the globe being visible: Cesium
+      // builds the polygon primitives over subsequent frames, so flipping to
+      // 'ready' here still leaves several seconds of black screen.
+      // dataSourceDisplay.ready is the documented signal that every data source
+      // has primitives ready to render.
+      const viewer = viewerRef.current!;
+      const started = Date.now();
+      const waitForFirstPaint = () => {
+        if (viewer.isDestroyed()) return;
+        // Give up after 30s rather than pinning the overlay open forever.
+        if (viewer.dataSourceDisplay.ready || Date.now() - started > 30_000) {
+          viewer.scene.postRender.removeEventListener(waitForFirstPaint);
+          setGlobeStatus('ready');
+        }
+      };
+      viewer.scene.postRender.addEventListener(waitForFirstPaint);
+    }).catch(err => {
+      console.error('[Globe] GeoJSON load failed:', err);
+      setGlobeStatus('error');
+    });
 
     const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
     handlerRef.current = handler;
@@ -520,11 +544,48 @@ export default function Globe() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#000' }} />
-      <ChoroplethLegend mode={choroplethMode} />
+      {globeStatus !== 'loading' && <ChoroplethLegend mode={choroplethMode} />}
+      {globeStatus !== 'ready' && <GlobeStatus status={globeStatus} />}
       {tooltip && (
         <Tooltip tip={tooltip} mode={choroplethMode} values={choroplethValues} />
       )}
       {drillCountry && <DrillBadge country={drillCountry} />}
+    </div>
+  );
+}
+
+// ─── Globe loading / error state ──────────────────────────────────────────────
+function GlobeStatus({ status }: { status: 'loading' | 'error' }) {
+  const failed = status === 'error';
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 14,
+        pointerEvents: 'none', textAlign: 'center', padding: 24,
+      }}
+    >
+      {!failed && (
+        <div
+          style={{
+            width: 46, height: 46, borderRadius: '50%',
+            border: '2px solid rgba(255,255,255,0.12)',
+            borderTopColor: '#818cf8',
+            animation: 'rs-spin 900ms linear infinite',
+          }}
+        />
+      )}
+      <div style={{ color: 'var(--text-primary)', fontSize: 14, fontWeight: 600 }}>
+        {failed ? 'Could not load country boundaries' : 'Building the world…'}
+      </div>
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, maxWidth: 300, lineHeight: 1.5 }}>
+        {failed
+          ? 'The country geometry CDN did not respond. Check your connection and reload.'
+          : 'Loading boundaries for 210 countries. First load takes a few seconds.'}
+      </div>
+      <style>{'@keyframes rs-spin{to{transform:rotate(360deg)}}'}</style>
     </div>
   );
 }
@@ -562,17 +623,20 @@ function ChoroplethLegend({ mode }: { mode: ChoroplethMode }) {
         Overlay
       </div>
       {(Object.keys(CHOROPLETH_LABELS) as ChoroplethMode[]).map(m => (
-        <label key={m} style={{ cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center' }}>
+        // minHeight 24 meets the WCAG 2.5.8 minimum target size; the bare 13px
+        // radio was well under it. The label is the hit area, so sizing it is enough.
+        <label key={m} style={{ cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center', minHeight: 24 }}>
           <input
             type="radio"
+            name="choropleth-overlay"
             checked={mode === m}
             onChange={() => setChoroplethMode(m)}
-            style={{ accentColor: '#6366f1' }}
+            style={{ accentColor: '#6366f1', width: 16, height: 16, margin: 0, flexShrink: 0 }}
           />
           <span style={{ color: mode === m ? '#fff' : '#9ca3af' }}>{CHOROPLETH_LABELS[m]}</span>
         </label>
       ))}
-      <div style={{ marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: '#6b7280' }}>
+      <div style={{ marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: 'var(--text-muted)' }}>
         <span style={{ background: 'hsl(120,80%,45%)', width: 12, height: 12, borderRadius: 2, display: 'inline-block', flexShrink: 0 }} />
         Low
         <span style={{ flex: 1, height: 4, background: 'linear-gradient(to right,hsl(120,80%,45%),hsl(60,80%,45%),hsl(0,80%,45%))', borderRadius: 2 }} />
