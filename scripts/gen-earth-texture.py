@@ -13,6 +13,7 @@ W, H = 4096, 2048
 OCEAN = (54, 158, 176)
 OCEAN_DEEP = (38, 128, 148)
 SHORE = (30, 112, 132)
+BORDER = (46, 40, 34)
 
 # abs(latitude) -> land colour. Real biome banding is also what reads as
 # "cartoon Earth": tropical greens, desert belt, temperate greens, boreal
@@ -77,6 +78,30 @@ def load_rings(path, obj):
     return rings
 
 
+def load_arcs(path):
+    """Decode every arc once — the complete boundary network.
+
+    In TopoJSON a border shared by two countries is a single arc referenced by
+    both, and a coastline is an arc referenced by one. Decoding each arc in the
+    arcs array exactly once therefore yields all coastlines and all internal
+    borders with nothing drawn twice.
+    """
+    t = json.load(open(path))
+    tr = t["transform"]
+    sx, sy = tr["scale"]
+    tx, ty = tr["translate"]
+    out = []
+    for arc in t["arcs"]:
+        x = y = 0
+        pts = []
+        for dx, dy in arc:
+            x += dx
+            y += dy
+            pts.append((x * sx + tx, y * sy + ty))
+        out.append(pts)
+    return out
+
+
 def unwrap(ring):
     """Make longitudes continuous.
 
@@ -119,8 +144,11 @@ def vertical_ramp(fn):
 
 
 def main():
-    rings = load_rings("land50.json", "land")
-    print(f"land rings: {len(rings)}")
+    # countries-50m (not land-50m) so the land mask and the border network are
+    # the same geometry — otherwise borders drawn from one dataset drift off the
+    # coastline of a mask built from the other.
+    rings = load_rings("countries50.json", "countries")
+    print(f"country rings: {len(rings)}")
 
     mask = build_mask(rings)
 
@@ -157,6 +185,27 @@ def main():
             cd.ellipse([cx + ox - rx, cy + oy - ry, cx + ox + rx, cy + oy + ry], fill=110)
     clouds = clouds.filter(ImageFilter.GaussianBlur(14))
     earth = Image.composite(Image.new("RGB", (W, H), (255, 255, 255)), earth, clouds)
+
+    # Country borders. Every arc drawn once = all coastlines + internal borders,
+    # with shared borders never doubled. Drawn last so clouds do not bury them.
+    arcs = load_arcs("countries50.json")
+    print(f"boundary arcs: {len(arcs)}")
+    ink = Image.new("L", (W, H), 0)
+    bd = ImageDraw.Draw(ink)
+    for arc in arcs:
+        if len(arc) < 2:
+            continue
+        u = unwrap(arc)
+        pts = [((lon + 180.0) / 360.0 * W, (90.0 - lat) / 180.0 * H) for lon, lat in u]
+        for dx in (-W, 0, W):
+            bd.line([(x + dx, y) for x, y in pts], fill=255, width=2, joint="curve")
+    ink = ink.filter(ImageFilter.GaussianBlur(0.4))
+    # Subtle dark line: composite the border colour at ~55% where ink is opaque.
+    earth = Image.composite(
+        Image.new("RGB", (W, H), BORDER),
+        earth,
+        ink.point(lambda v: int(v * 0.55)),
+    )
 
     out = "earth-cartoon.png"
     earth.save(out, optimize=True)
