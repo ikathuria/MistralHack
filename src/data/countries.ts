@@ -102,7 +102,8 @@ export const COUNTRY_NAMES: Record<string, string> = {
 };
 
 /** Display name for a country code, falling back to the raw code. */
-export function countryName(iso3: string): string {
+export function countryName(iso3: string | null | undefined): string {
+  if (!iso3) return 'World';
   return COUNTRY_NAMES[iso3] ?? iso3;
 }
 

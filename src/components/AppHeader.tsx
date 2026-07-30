@@ -62,6 +62,16 @@ export default function AppHeader() {
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
         <CountrySearch />
         <Link
+          to="/wall"
+          style={{
+            display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',
+            fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)',
+            textDecoration: 'none', whiteSpace: 'nowrap',
+          }}
+        >
+          🗞️ Front pages
+        </Link>
+        <Link
           to="/world"
           style={{
             display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',

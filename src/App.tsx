@@ -7,6 +7,7 @@ import Globe from './components/Globe';
 import CountryPanel from './components/CountryPanel';
 import AppHeader from './components/AppHeader';
 import WorldDashboard from './pages/WorldDashboard';
+import WallPage from './pages/WallPage';
 import GamePage from './pages/GamePage';
 
 function GlobePage() {
@@ -48,6 +49,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<GlobePage />} />
         <Route path="/world" element={<WorldDashboard />} />
+        <Route path="/wall" element={<WallPage />} />
+        <Route path="/wall/:worldId" element={<WallPage />} />
         <Route path="/play/:worldId" element={<GamePage />} />
       </Routes>
     </BrowserRouter>
