@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Globe from './components/Globe';
 import CountryPanel from './components/CountryPanel';
+import AppHeader from './components/AppHeader';
 import WorldDashboard from './pages/WorldDashboard';
 import GamePage from './pages/GamePage';
 
@@ -10,6 +11,7 @@ function GlobePage() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <Globe />
+      <AppHeader />
       <CountryPanel />
     </div>
   );
