@@ -14,7 +14,7 @@ function SimulateLog({ log }: { log: { country: string; status: string; error?: 
   if (!log.length) return null;
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
         Last Simulation
       </div>
       {log.map((r, i) => (
@@ -23,7 +23,7 @@ function SimulateLog({ log }: { log: { country: string; status: string; error?: 
             {r.status === 'ok' ? '✓' : '✗'}
           </span>
           <span style={{ color: r.status === 'ok' ? '#d1d5db' : '#f87171' }}>{r.country}</span>
-          {r.error && <span style={{ color: '#6b7280', fontSize: 11 }}>{r.error.slice(0, 40)}</span>}
+          {r.error && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.error.slice(0, 40)}</span>}
         </div>
       ))}
     </div>
@@ -85,7 +85,7 @@ export default function GamePage() {
             <Link
               to="/"
               onClick={() => exitFork()}
-              style={{ color: '#6b7280', fontSize: 12, textDecoration: 'none' }}
+              style={{ color: 'var(--text-muted)', fontSize: 12, textDecoration: 'none' }}
             >
               ← Exit Game
             </Link>
@@ -101,7 +101,7 @@ export default function GamePage() {
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>
             Playing as {activeFork.countryCode}
           </div>
-          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 16 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 16 }}>
             Simulated Year <strong style={{ color: '#fff' }}>{activeFork.year}</strong>
             &nbsp;·&nbsp;No real-world data injected
           </div>
@@ -115,7 +115,7 @@ export default function GamePage() {
               basePolicies={playerData.policies ?? {}}
             />
           ) : (
-            <div style={{ color: '#6b7280', fontSize: 13 }}>Loading country data…</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading country data…</div>
           )}
 
           {/* Save Changes button — pulses the player's country on the globe */}
@@ -154,7 +154,7 @@ export default function GamePage() {
           </button>
 
           {isSimulating && (
-            <div style={{ color: '#6b7280', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
               Running AI agents for neighboring countries…
             </div>
           )}
@@ -164,7 +164,7 @@ export default function GamePage() {
           {/* World events in this fork */}
           {worldEvents.length > 0 && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
                 World Events
               </div>
               <WorldEventsFeed events={worldEvents} maxHeight={240} />

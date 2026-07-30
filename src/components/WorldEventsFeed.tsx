@@ -27,7 +27,7 @@ function EventRow({ event }: { event: WorldEvent }) {
         }}>
           {meta.label}
         </span>
-        <span style={{ color: '#6b7280', fontSize: 11, marginLeft: 'auto' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 'auto' }}>
           yr {event.sim_year}
         </span>
       </div>
@@ -36,7 +36,7 @@ function EventRow({ event }: { event: WorldEvent }) {
         <span style={{ fontWeight: 600, fontSize: 12 }}>{event.from_country}</span>
         {event.to_country && (
           <>
-            <span style={{ color: '#4b5563', fontSize: 11 }}>→</span>
+            <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>→</span>
             <span style={{ fontWeight: 600, fontSize: 12 }}>{event.to_country}</span>
           </>
         )}
@@ -57,7 +57,7 @@ interface Props {
 export default function WorldEventsFeed({ events, maxHeight }: Props) {
   if (!events.length) {
     return (
-      <p style={{ color: '#4b5563', fontSize: 13 }}>
+      <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>
         No inter-country events recorded yet. Events appear after the first agent simulation cycle.
       </p>
     );

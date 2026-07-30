@@ -71,7 +71,7 @@ export default function RegionPanel() {
       <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>
               Region
             </div>
             <div style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.2 }}>
@@ -86,7 +86,7 @@ export default function RegionPanel() {
                 {selectedRegion.countryCode}
               </span>
               {existing?.population !== undefined && (
-                <span style={{ fontSize: 11, color: '#6b7280' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   Pop. {formatPop(existing.population)}
                 </span>
               )}
@@ -95,7 +95,7 @@ export default function RegionPanel() {
           <button
             onClick={() => selectRegion(null)}
             style={{
-              background: 'none', border: 'none', color: '#6b7280',
+              background: 'none', border: 'none', color: 'var(--text-muted)',
               cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 4,
             }}
           >
@@ -106,7 +106,7 @@ export default function RegionPanel() {
 
       {/* Policy sliders */}
       <div style={{ padding: '14px 16px' }}>
-        <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
           Local Policies
         </div>
 
@@ -115,20 +115,20 @@ export default function RegionPanel() {
           const delta   = current - base[cfg.key];
           const deltaStr = delta === 0 ? '' :
             (delta > 0 ? `+${delta.toFixed(cfg.step < 1 ? 1 : 0)}` : delta.toFixed(cfg.step < 1 ? 1 : 0));
-          const deltaColor = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : '#6b7280';
+          const deltaColor = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : 'var(--text-muted)';
 
           return (
             <div key={cfg.key} style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                 <div>
                   <span style={{ fontSize: 12, color: '#d1d5db' }}>{cfg.label}</span>
-                  <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1 }}>{cfg.desc}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1 }}>{cfg.desc}</div>
                 </div>
                 <span style={{ fontSize: 12, textAlign: 'right' }}>
                   <span style={{ fontWeight: 600 }}>
                     {current.toFixed(cfg.step < 1 ? 1 : 0)}
                   </span>
-                  <span style={{ color: '#6b7280' }}>{cfg.unit}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{cfg.unit}</span>
                   {deltaStr && (
                     <span style={{ marginLeft: 5, color: deltaColor, fontSize: 11 }}>{deltaStr}</span>
                   )}
@@ -149,7 +149,7 @@ export default function RegionPanel() {
         })}
 
         {!isInFork && (
-          <p style={{ fontSize: 11, color: '#4b5563', margin: '4px 0 8px', textAlign: 'center' }}>
+          <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 8px', textAlign: 'center' }}>
             Take over a country to edit regional policies
           </p>
         )}
@@ -161,7 +161,7 @@ export default function RegionPanel() {
             style={{
               width: '100%', padding: '9px 0', borderRadius: 8, border: 'none',
               background: hasDraft ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.06)',
-              color: hasDraft ? '#fff' : '#4b5563',
+              color: hasDraft ? '#fff' : 'var(--text-faint)',
               fontSize: 13, fontWeight: 600,
               cursor: hasDraft ? 'pointer' : 'default',
               transition: 'background 0.2s',

@@ -35,7 +35,7 @@ function Slider({ cfg, base, value, onChange }: {
 }) {
   const delta = value - base;
   const deltaStr = delta === 0 ? '' : (delta > 0 ? `+${delta.toFixed(cfg.step < 1 ? 1 : 0)}` : delta.toFixed(cfg.step < 1 ? 1 : 0));
-  const deltaColor = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : '#6b7280';
+  const deltaColor = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : 'var(--text-muted)';
 
   return (
     <div style={{ marginBottom: 14 }}>
@@ -43,7 +43,7 @@ function Slider({ cfg, base, value, onChange }: {
         <span style={{ fontSize: 12, color: '#9ca3af' }}>{cfg.label}</span>
         <span style={{ fontSize: 12 }}>
           <span style={{ fontWeight: 600 }}>{value.toFixed(cfg.step < 1 ? 1 : 0)}</span>
-          <span style={{ color: '#6b7280' }}> {cfg.unit}</span>
+          <span style={{ color: 'var(--text-muted)' }}> {cfg.unit}</span>
           {deltaStr && <span style={{ marginLeft: 6, color: deltaColor, fontSize: 11 }}>{deltaStr}</span>}
         </span>
       </div>
@@ -73,7 +73,7 @@ export default function PolicyEditor({ baseIndicators, basePolicies }: Props) {
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
         Indicators
       </div>
 
@@ -87,7 +87,7 @@ export default function PolicyEditor({ baseIndicators, basePolicies }: Props) {
         />
       ))}
 
-      <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, marginTop: 16 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, marginTop: 16 }}>
         Policies
       </div>
 

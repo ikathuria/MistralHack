@@ -97,7 +97,7 @@ export default function CountryPanel() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
             Selected Country
           </div>
           <div style={{ fontSize: 20, fontWeight: 700 }}>{selectedCountry}</div>
@@ -105,7 +105,7 @@ export default function CountryPanel() {
         <button
           onClick={() => selectCountry(null)}
           style={{
-            background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer',
+            background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
             fontSize: 20, lineHeight: 1, padding: 4,
           }}
           aria-label="Close panel"
@@ -123,7 +123,7 @@ export default function CountryPanel() {
             style={{
               flex: 1, padding: '5px 0', borderRadius: 6, border: 'none',
               background: tab === t ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: tab === t ? '#fff' : '#6b7280',
+              color: tab === t ? '#fff' : 'var(--text-muted)',
               cursor: 'pointer', fontSize: 11, fontWeight: 600,
               textTransform: 'uppercase', letterSpacing: 0.5,
             }}
@@ -136,7 +136,7 @@ export default function CountryPanel() {
       {/* Body */}
       {tab === 'indicators' ? (
         !data
-          ? <div style={{ color: '#6b7280', fontSize: 13 }}>Loading…</div>
+          ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>
           : <CountryData data={data} />
       ) : (
         <DecisionLog countryCode={selectedCountry} />
@@ -165,7 +165,7 @@ export default function CountryPanel() {
           >
             {takingOver ? '⏳ Forking universe…' : `🎮 Take Over ${selectedCountry}`}
           </button>
-          <div style={{ color: '#4b5563', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
+          <div style={{ color: 'var(--text-faint)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
             {user ? 'Forks the simulation — your parallel universe' : 'Sign in to take control'}
           </div>
         </div>

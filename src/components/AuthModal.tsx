@@ -57,7 +57,7 @@ export default function AuthModal({ onSuccess, onClose }: Props) {
         <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>
           {mode === 'signin' ? 'Sign In' : 'Create Account'}
         </div>
-        <div style={{ color: '#6b7280', fontSize: 13, marginBottom: 20 }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20 }}>
           {mode === 'signin'
             ? 'Sign in to take over a country and fork the simulation.'
             : 'Create an account to start your own parallel universe.'}
@@ -123,7 +123,7 @@ export default function AuthModal({ onSuccess, onClose }: Props) {
               {loading ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
 
-            <div style={{ textAlign: 'center', marginTop: 14, fontSize: 13, color: '#6b7280' }}>
+            <div style={{ textAlign: 'center', marginTop: 14, fontSize: 13, color: 'var(--text-muted)' }}>
               {mode === 'signin' ? (
                 <>No account?{' '}
                   <button

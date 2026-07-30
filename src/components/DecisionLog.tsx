@@ -52,16 +52,16 @@ export default function DecisionLog({ countryCode }: { countryCode: string }) {
   const decisions = useWorldStore(s => s.countryDecisions[countryCode]);
 
   if (!decisions) {
-    return <p style={{ color: '#6b7280', fontSize: 13 }}>Loading decision log…</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading decision log…</p>;
   }
 
   if (decisions.length === 0) {
-    return <p style={{ color: '#6b7280', fontSize: 13 }}>No agent decisions recorded yet.</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No agent decisions recorded yet.</p>;
   }
 
   return (
     <div>
-      <div style={{ fontWeight: 600, fontSize: 12, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+      <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
         Agent Decision Log
       </div>
       {decisions.map(d => <DecisionEntry key={d.id} d={d} />)}
