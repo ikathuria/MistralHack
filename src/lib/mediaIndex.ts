@@ -20,9 +20,21 @@ export interface MediaIndex {
 }
 
 const B2_BASE = (import.meta.env.VITE_B2_PUBLIC_BASE as string | undefined) ?? '';
+// A PRIVATE bucket can't be read from a base URL — the index has to be a
+// presigned URL (with a signature). The batch command prints this; set it as
+// VITE_MEDIA_INDEX_URL. It points at the live world's index and, like all
+// presigned URLs, expires (<=7 days) — regenerate + reset it to refresh.
+// The image URLs inside the index are presigned by the same batch run.
+const MEDIA_INDEX_URL = (import.meta.env.VITE_MEDIA_INDEX_URL as string | undefined) ?? '';
 
-/** URL of a world's media index. Same-origin when VITE_B2_PUBLIC_BASE is unset. */
+/**
+ * URL of a world's media index.
+ * - Private bucket: the presigned VITE_MEDIA_INDEX_URL (live world).
+ * - Public bucket: constructed from VITE_B2_PUBLIC_BASE.
+ * - Neither set: same-origin (local dev mock).
+ */
 export function mediaIndexUrl(worldId: string): string {
+  if (MEDIA_INDEX_URL && (worldId === 'live' || !B2_BASE)) return MEDIA_INDEX_URL;
   const base = B2_BASE.replace(/\/$/, '');
   return `${base}/index/${worldId}/media.json`;
 }

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 from dotenv import load_dotenv
@@ -39,12 +40,19 @@ def main(argv: list[str] | None = None) -> int:
     bt.add_argument("--public", action="store_true", help="Store public URLs instead of presigned (public bucket).")
     bt.add_argument("--out", default="out", help="Local output dir when B2 credentials are absent.")
 
+    sub.add_parser("setup-cors", help="Set the B2 bucket CORS rule so the browser can read media.")
+
     args = parser.parse_args(argv)
 
     if args.command == "front-page":
         return _front_page(args)
     if args.command == "batch":
         return _batch(args)
+    if args.command == "setup-cors":
+        from .presign import configure_cors
+        configure_cors()
+        print(f"CORS configured on {os.environ.get('B2_BUCKET')} (GET/HEAD from any origin).")
+        return 0
     return 2
 
 
@@ -84,7 +92,6 @@ def _front_page(args) -> int:
         print(f"\nbeats: {len(brief.beats)}")
         return 0
 
-    import os
     import shutil
     import urllib.parse
 

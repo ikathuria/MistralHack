@@ -65,6 +65,26 @@ def presign_url(asset_url: str, expires: int = MAX_EXPIRES) -> str:
     return presign_get(object_key_from_url(asset_url), expires)
 
 
+def configure_cors(origins: list[str] | None = None) -> None:
+    """Allow browser GET of the bucket's objects.
+
+    A private bucket returns 403 to an unauthenticated request AND blocks
+    cross-origin browser reads without a CORS rule — even a presigned URL fails
+    with "Failed to fetch" from the app's origin until this is set. GET/HEAD only;
+    the URLs themselves are still presigned and time-limited.
+    """
+    _client().put_bucket_cors(
+        Bucket=os.environ["B2_BUCKET"],
+        CORSConfiguration={"CORSRules": [{
+            "AllowedMethods": ["GET", "HEAD"],
+            "AllowedOrigins": origins or ["*"],
+            "AllowedHeaders": ["*"],
+            "ExposeHeaders": ["Content-Length", "Content-Type"],
+            "MaxAgeSeconds": 3600,
+        }]},
+    )
+
+
 def put_index(key: str, body: bytes) -> str:
     """Upload the media index JSON to B2 and return a presigned GET URL for it.
 
