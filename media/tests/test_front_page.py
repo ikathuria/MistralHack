@@ -68,3 +68,13 @@ def test_index_is_sorted_and_keyed_per_world():
     assert idx["count"] == 2
     assert idx["media"][0]["sim_date"] == "2024-01-01"  # sorted
     assert index_key("fork-1") == "index/fork-1/media.json"
+
+
+def test_presign_key_parsing_both_url_styles(monkeypatch):
+    # Offline: only the key extraction, no boto3 / network.
+    monkeypatch.setenv("B2_BUCKET", "rs-media")
+    from realityshift_media.presign import object_key_from_url
+    # path-style: https://s3.../bucket/key
+    assert object_key_from_url("https://s3.us-west-004.backblazeb2.com/rs-media/assets/ab/cd/abcd.png") == "assets/ab/cd/abcd.png"
+    # virtual-hosted: https://bucket.s3.../key
+    assert object_key_from_url("https://rs-media.s3.us-west-004.backblazeb2.com/assets/ab/cd/abcd.png") == "assets/ab/cd/abcd.png"

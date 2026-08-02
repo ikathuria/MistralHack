@@ -25,7 +25,7 @@ dev = ["pytest>=8"]
 # Local on-device image generation (SDXL-Turbo via diffusers on Apple Silicon
 # MPS). ~2 GB of wheels + a ~7 GB model on first run. Not needed for the cloud
 # backend or for the stub-mode tests.
-local = ["torch>=2.2", "diffusers>=0.27", "transformers>=4.40", "accelerate>=0.30", "safetensors"]
+local = ["torch>=2.2", "torchvision", "diffusers>=0.27", "transformers>=4.40", "accelerate>=0.30", "safetensors"]
 
 [project.scripts]
 rs-media = "realityshift_media.cli:main"

@@ -40,14 +40,25 @@ def serialize(index: dict) -> bytes:
     return json.dumps(index, indent=2, sort_keys=False).encode("utf-8")
 
 
-def entry_from_result(result, *, sim_date: str, nation_iso: str | None, kind: str) -> MediaEntry:
-    """Pull the durable URL + manifest identity out of a Genblaze PipelineResult."""
+def entry_from_result(result, *, sim_date: str, nation_iso: str | None, kind: str,
+                      private: bool = False) -> MediaEntry:
+    """Pull the durable URL + manifest identity out of a Genblaze PipelineResult.
+
+    With private=True the asset URL is replaced by a time-limited presigned URL,
+    so a private B2 bucket can be read by the browser without a public bucket or
+    a Worker proxy. Presigned URLs expire (<=7 days), so re-presign when the
+    index is regenerated.
+    """
     asset = result.run.steps[-1].assets[0]
+    url = asset.url
+    if private:
+        from .presign import presign_url
+        url = presign_url(asset.url)
     return MediaEntry(
         sim_date=sim_date,
         nation_iso=nation_iso,
         kind=kind,
-        b2_url=asset.url,
+        b2_url=url,
         manifest_uri=result.manifest.manifest_uri,
         canonical_hash=result.manifest.canonical_hash,
     )
