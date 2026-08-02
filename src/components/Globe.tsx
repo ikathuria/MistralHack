@@ -292,6 +292,11 @@ export default function Globe() {
     for (const entity of source.entities.values) {
       const iso3 = entityIso3Map.get(entity.id);
       if (iso3 !== pulseCountry || !entity.polygon) continue;
+      // Imperative Cesium scene write: flash the polygon white, then restore its
+      // choropleth color after 550ms. The entity is captured into setTimeout, so
+      // the immutability rule sees it escape-then-mutate — but mutating the live
+      // Cesium scene through the ref is exactly what this ref exists for.
+      // eslint-disable-next-line react-hooks/immutability
       entity.polygon.material = new ColorMaterialProperty(Color.WHITE.withAlpha(0.95));
       const restoreColor = choroplethColor(choroplethValues.get(iso3), min, max);
       setTimeout(() => {

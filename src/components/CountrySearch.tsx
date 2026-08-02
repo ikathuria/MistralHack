@@ -33,7 +33,14 @@ export default function CountrySearch() {
       .slice(0, 8);
   }, [query]);
 
-  useEffect(() => setActiveIndex(0), [query]);
+  // Reset the highlighted option whenever the query changes. Done during render
+  // (the previous-value pattern) rather than in an effect, which avoids an extra
+  // commit and the set-state-in-effect lint.
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setActiveIndex(0);
+  }
 
   // Close on outside click.
   useEffect(() => {

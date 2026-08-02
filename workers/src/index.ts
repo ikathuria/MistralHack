@@ -337,7 +337,7 @@ ${items}
             'Access-Control-Allow-Origin': '*',
           },
         });
-      } catch (e) {
+      } catch {
         return new Response('Internal Server Error', { status: 500 });
       }
     }

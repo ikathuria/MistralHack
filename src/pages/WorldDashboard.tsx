@@ -101,7 +101,6 @@ export default function WorldDashboard() {
   } = useWorldStore();
 
   const { selectedRegion } = useRegionStore();
-  const [simYear, setSimYear] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'top' | 'timeline' | 'events'>('top');
 
   // Load divergences + events on mount and switch globe to divergence mode
@@ -113,12 +112,10 @@ export default function WorldDashboard() {
     return () => setChoroplethMode('gdp_per_capita'); // reset on unmount
   }, []);
 
-  // Compute summary stats from divergences
-  useEffect(() => {
-    if (!recentDivergences.length) return;
-    const years = recentDivergences.map(d => d.sim_year);
-    setSimYear(Math.max(...years));
-  }, [recentDivergences]);
+  // Latest simulated year, derived from the loaded divergences
+  const simYear = recentDivergences.length
+    ? Math.max(...recentDivergences.map(d => d.sim_year))
+    : null;
 
   const divergedCount = recentDivergences.filter(d =>
     Object.values(d.delta).reduce((s, v) => s + Math.abs(v), 0) > 1
