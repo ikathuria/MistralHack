@@ -46,6 +46,33 @@ def front_page_prompt(brief: DivergenceBrief) -> str:
     )
 
 
+def illustration_prompt(brief: DivergenceBrief) -> str:
+    """Scene-only prompt for the below-the-fold illustration.
+
+    No text, no masthead, no layout — the newspaper compositor draws all of that.
+    A diffusion model only needs to render the editorial artwork, which is what it
+    is good at.
+    """
+    return (
+        f"Editorial illustration for a newspaper, flat risograph poster style, "
+        f"muted two-tone print with halftone texture and paper grain, depicting "
+        f"{_scene(brief)}. Stylised illustration, no text, no words, no lettering, "
+        f"no real people, no recognisable faces."
+    )
+
+
+def newspaper_fields(brief: DivergenceBrief) -> dict[str, str]:
+    """Masthead / headline / subhead / dateline for the layout compositor."""
+    lead = brief.beats[0].headline if brief.beats else "The month in policy"
+    sub = brief.beats[1].headline if len(brief.beats) > 1 else ""
+    return {
+        "masthead": masthead(brief.nation_iso),
+        "headline": lead,
+        "subhead": sub,
+        "dateline": f"{country_name(brief.nation_iso)} · Sim year {brief.sim_date.year}",
+    }
+
+
 def _scene(brief: DivergenceBrief) -> str:
     """A safe, place/institution-level scene — never graphic, never a person."""
     kinds = {b.kind for b in brief.beats}

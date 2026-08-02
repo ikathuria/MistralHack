@@ -25,6 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     fp.add_argument("--nation", required=True, help="ISO3 country code, e.g. IND")
     fp.add_argument("--year", required=True, type=int, help="Simulated year")
     fp.add_argument("--world", default="live", help="world_id (fork id, or 'live')")
+    fp.add_argument("--backend", default="local", choices=["local", "cloud"],
+                    help="local diffusion (default, free, on-device) or cloud (GMICloud)")
+    fp.add_argument("--out", default=None, help="Directory to save the PNG locally (when not uploading to B2).")
     fp.add_argument("--dry-run", action="store_true", help="Build the brief and prompt only; no generation.")
 
     args = parser.parse_args(argv)
@@ -49,13 +52,34 @@ def _front_page(args) -> int:
         print(f"\nbeats: {len(brief.beats)}")
         return 0
 
+    import os
+    import shutil
+    import urllib.parse
+
     from .index import entry_from_result
     from .pipelines.front_page import generate_front_page
 
-    result = generate_front_page(brief)
+    # Upload to B2 only when credentials are present; otherwise save locally.
+    sink = None
+    if os.environ.get("B2_BUCKET") and os.environ.get("B2_KEY_ID"):
+        from .storage import backblaze_sink
+        sink = backblaze_sink()
+
+    result = generate_front_page(brief, backend=args.backend, sink=sink)
     if result.failed_steps():
         print("generation failed:", result.error_summary(), file=sys.stderr)
         return 1
+
+    asset = result.run.steps[-1].assets[0]
+    if sink is None:
+        out_dir = args.out or "."
+        os.makedirs(out_dir, exist_ok=True)
+        dst = os.path.join(out_dir, f"frontpage-{args.world}-{args.nation}-{args.year}.png")
+        shutil.copy(urllib.parse.urlparse(asset.url).path, dst)
+        print(f"saved: {dst}")
+        print(f"manifest verifies: {result.manifest.verify()}  hash: {result.manifest.canonical_hash[:16]}…")
+        return 0
+
     entry = entry_from_result(
         result, sim_date=brief.sim_date.isoformat(), nation_iso=brief.nation_iso, kind="front_page"
     )
