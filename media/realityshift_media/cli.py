@@ -30,11 +30,43 @@ def main(argv: list[str] | None = None) -> int:
     fp.add_argument("--out", default=None, help="Directory to save the PNG locally (when not uploading to B2).")
     fp.add_argument("--dry-run", action="store_true", help="Build the brief and prompt only; no generation.")
 
+    bt = sub.add_parser("batch", help="Generate many front pages and publish the index.")
+    bt.add_argument("--nations", required=True, help="Comma-separated ISO3 codes, e.g. IND,USA,BRA")
+    bt.add_argument("--from-year", required=True, type=int)
+    bt.add_argument("--to-year", required=True, type=int)
+    bt.add_argument("--world", default="live")
+    bt.add_argument("--backend", default="local", choices=["local", "cloud"])
+    bt.add_argument("--public", action="store_true", help="Store public URLs instead of presigned (public bucket).")
+    bt.add_argument("--out", default="out", help="Local output dir when B2 credentials are absent.")
+
     args = parser.parse_args(argv)
 
     if args.command == "front-page":
         return _front_page(args)
+    if args.command == "batch":
+        return _batch(args)
     return 2
+
+
+def _batch(args) -> int:
+    from .batch import run_batch, year_range
+
+    nations = [n.strip().upper() for n in args.nations.split(",") if n.strip()]
+    pairs = year_range(nations, args.from_year, args.to_year)
+    print(f"generating {len(pairs)} front pages ({len(nations)} nations × "
+          f"{args.to_year - args.from_year + 1} years) via {args.backend}…")
+
+    res = run_batch(
+        pairs, world_id=args.world, backend=args.backend,
+        private=not args.public, out_dir=args.out,
+    )
+    print(f"\ngenerated: {res.generated}   failed: {len(res.failed)}")
+    for f in res.failed:
+        print("  ✗", f, file=sys.stderr)
+    print(f"index: {res.index_url}")
+    print("set VITE_B2_PUBLIC_BASE so the wall reads this index." if res.index_url and res.index_url.startswith("http")
+          else "no B2 creds — wrote images + index locally under the output dir.")
+    return 0 if res.generated else 1
 
 
 def _front_page(args) -> int:

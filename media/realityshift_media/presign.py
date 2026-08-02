@@ -63,3 +63,16 @@ def presign_get(key: str, expires: int = MAX_EXPIRES) -> str:
 def presign_url(asset_url: str, expires: int = MAX_EXPIRES) -> str:
     """Presign an asset URL the sink produced (convenience over presign_get)."""
     return presign_get(object_key_from_url(asset_url), expires)
+
+
+def put_index(key: str, body: bytes) -> str:
+    """Upload the media index JSON to B2 and return a presigned GET URL for it.
+
+    The frontend reads the index the same way it reads images — a presigned URL —
+    so a private bucket needs no public read at all.
+    """
+    _client().put_object(
+        Bucket=os.environ["B2_BUCKET"], Key=key, Body=body,
+        ContentType="application/json",
+    )
+    return presign_get(key)

@@ -24,8 +24,24 @@ FALLBACK_MODELS = ["flux-1-schnell"]
 LOCAL_MODEL = "sdxl-turbo"
 
 
-def build_pipeline(brief: DivergenceBrief, *, backend: str = "local") -> Pipeline:
-    """Construct the pipeline for one front page. No network until .run()."""
+def make_local_provider():
+    """One LocalDiffusionProvider, so a batch loads the diffusion model once.
+
+    build_pipeline() otherwise constructs a fresh provider per call, which would
+    reload the ~7 GB model for every image (~200s each). Reuse this across a
+    batch and only the first image pays the load cost.
+    """
+    from ..providers.local_diffusion import LocalDiffusionProvider
+
+    return LocalDiffusionProvider()
+
+
+def build_pipeline(brief: DivergenceBrief, *, backend: str = "local", provider=None) -> Pipeline:
+    """Construct the pipeline for one front page. No network until .run().
+
+    Pass `provider` (a LocalDiffusionProvider from make_local_provider) to reuse
+    a loaded model across many briefs.
+    """
     pipeline = Pipeline(
         f"front-page-{brief.fork_id}-{brief.nation_iso}-{brief.sim_date.year}",
         tenant_id=brief.fork_id,
@@ -33,10 +49,8 @@ def build_pipeline(brief: DivergenceBrief, *, backend: str = "local") -> Pipelin
     pipeline = apply_provenance(pipeline, brief)
 
     if backend == "local":
-        from ..providers.local_diffusion import LocalDiffusionProvider
-
         pipeline.step(
-            LocalDiffusionProvider(),
+            provider or make_local_provider(),
             model=LOCAL_MODEL,
             prompt=illustration_prompt(brief),
             modality=Modality.IMAGE,
@@ -49,10 +63,10 @@ def build_pipeline(brief: DivergenceBrief, *, backend: str = "local") -> Pipelin
     if backend == "cloud":
         from genblaze_gmicloud import GMICloudImageProvider
 
-        provider = GMICloudImageProvider(api_key=os.environ.get("GMI_API_KEY"))
-        register_pricing(provider)
+        cloud = provider or GMICloudImageProvider(api_key=os.environ.get("GMI_API_KEY"))
+        register_pricing(cloud)
         pipeline.step(
-            provider,
+            cloud,
             model=PRIMARY_MODEL,
             prompt=front_page_prompt(brief),
             modality=Modality.IMAGE,
@@ -65,7 +79,7 @@ def build_pipeline(brief: DivergenceBrief, *, backend: str = "local") -> Pipelin
 
 
 def generate_front_page(brief: DivergenceBrief, *, backend: str = "local",
-                        sink=None, timeout: float = 300.0):
+                        sink=None, provider=None, timeout: float = 300.0):
     """Run the pipeline and return the PipelineResult.
 
     With backend='local' and sink=None the run is fully offline: the asset is a
@@ -74,6 +88,6 @@ def generate_front_page(brief: DivergenceBrief, *, backend: str = "local",
     """
     # raise_on_failure=False keeps failed steps inspectable via result.failed_steps()
     # rather than raising; it also pins the behaviour ahead of the 0.4.0 default flip.
-    return build_pipeline(brief, backend=backend).run(
+    return build_pipeline(brief, backend=backend, provider=provider).run(
         sink=sink, timeout=timeout, raise_on_failure=False,
     )
