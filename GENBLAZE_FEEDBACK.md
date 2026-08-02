@@ -118,3 +118,30 @@ Real friction is likely here, but we have not hit it concretely enough to file:
   the failure mode is clear when ffmpeg is missing. Will revisit in Milestone 14.
 - **Batch throughput** — `abatch_run()` behaviour under B2 rate limits is untested by us.
   Will revisit in Milestone 13.
+
+---
+
+## Positive: custom local provider integrated cleanly (from the local-generation build)
+
+We moved image generation on-device (SDXL-Turbo via diffusers) by writing a
+`SyncProvider` subclass — one `generate()` method returning an `Asset`. It
+plugged into `Pipeline` → `Manifest` → the B2 sink with no special-casing, and
+the provenance hash worked identically to a cloud provider. Two things that made
+this smooth and are worth the maintainers knowing people rely on:
+
+- **`SyncProvider` is a genuinely small, well-documented contract.** `name` +
+  `generate(step, config)`; the docstring example was enough to implement against.
+- **`file://` assets upload transparently.** Returning `Asset(url="file://…",
+  sha256=…)` and letting `ObjectStorageSink` upload the local bytes to B2 is the
+  clean integration point for any local/offline generator. Without a sink the
+  manifest still builds and `verify()` passes, which let us test the whole
+  pipeline offline with zero credentials.
+
+## Minor: presigned/private-bucket + CORS is app-side, not Genblaze's job (noted, not a bug)
+
+Serving a **private** B2 bucket to a browser needs presigned URLs *and* a bucket
+CORS rule — without CORS the browser fails even a valid presigned URL with
+"Failed to fetch". Genblaze's `asset.url` is the durable object URL; presigning
+and CORS are correctly outside its scope. Flagging only because a one-line note
+in the object-storage docs ("private buckets need presigning + CORS to be
+browser-readable") would save an integrator the debugging round-trip.

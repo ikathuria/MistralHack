@@ -73,8 +73,9 @@ SDK, so the isolation is enforced by the architecture rather than by convention.
 | Agent backend | Cloudflare Workers |
 | Database | Supabase (Postgres + pgvector) — simulation transactional state |
 | Auth | Supabase Auth |
-| Media pipeline | Genblaze (Python) |
-| Media storage | Backblaze B2 — assets, manifests, snapshots, Parquet analytics |
+| Media pipeline | Genblaze (Python) — provenance manifests, B2 storage |
+| Media generation | Local SDXL-Turbo (diffusers, on-device) — no cloud provider |
+| Media storage | Backblaze B2 — assets, manifests, presigned/private serving |
 | Simulation LLM | Groq (Llama 3.3 70B), OpenAI-compatible |
 | Scheduler | GitHub Actions (monthly cron) |
 | Country data | World Bank API + REST Countries |
@@ -194,13 +195,17 @@ start the Worker via `npm --prefix workers run dev` so the pinned version in
 
 ### 2. Media layer
 
+Generation runs **locally** — a diffusion model on-device, no cloud provider, no
+API key, no per-image cost. Only Backblaze B2 (storage) needs an account.
+
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e 'media/[cli]'      # [cli] pulls genblaze-cli — NOT in the umbrella package
+pip install -e 'media/[local,cli]'   # [local] = torch + diffusers; [cli] = genblaze-cli
 ```
 
-Copy `media/.env.example` to `media/.env` and fill in the keys (see "Going live"
-below). Exercise the whole chain without generating anything:
+`[local]` pulls ~2 GB of wheels; the first generation downloads the SDXL-Turbo
+model (~7 GB) once. Exercise the whole chain without generating (no torch,
+no B2):
 
 ```bash
 rs-media front-page --nation IND --year 2027 --dry-run
@@ -209,34 +214,55 @@ rs-media front-page --nation IND --year 2027 --dry-run
 Verify provenance on any generated asset:
 
 ```bash
-genblaze verify broadcast.mp4      # re-derives the manifest hash; shows the simulation.* fields
-genblaze extract broadcast.mp4
+genblaze verify frontpage.png      # re-derives the manifest hash; shows the simulation.* fields
+genblaze extract frontpage.png
 ```
+
+See [`B2_AND_GENBLAZE.md`](B2_AND_GENBLAZE.md) and [`PROVIDERS.md`](PROVIDERS.md)
+for how storage and generation fit together.
 
 ---
 
 ## Going live (credentials + deploy)
 
-Everything below the network boundary is built and tested; these are the steps
-that need accounts. Two credentials for media, then the deploy. ~30 minutes.
+Everything is built and verified end to end against a real bucket. One account
+(Backblaze B2) for media, then the deploy.
 
-### A. Media credentials → first generated asset
+### A. Backblaze B2 → populate the front-page wall
 
-1. **Backblaze B2** — create a bucket (public, so the frontend can read images
-   and the index) and an application key scoped to it. Put in `media/.env`:
-   `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET`, `B2_REGION` (e.g. `us-west-004`).
-2. **GMICloud** — key from [console.gmicloud.ai](https://console.gmicloud.ai)
-   → `GMI_API_KEY` in `media/.env`.
-3. Generate the first real front page and confirm provenance:
+1. **Create a bucket** (private is fine — see the note on expiry below) and an
+   application key scoped to it. Put in `media/.env` (or the root `.env`):
+   `B2_KEY_ID`, `B2_APP_KEY`, `B2_BUCKET`, `B2_REGION` (e.g. `us-east-005`),
+   plus `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` so the adapter can read.
+2. **Allow the browser to read the bucket** (once per bucket):
    ```bash
-   rs-media front-page --nation IND --year 2027       # writes an image + manifest to B2
+   rs-media setup-cors
    ```
-   This closes the M12/M13 checkpoint: an image in B2 whose manifest hash
-   carries `simulation.fork_id` and `simulation.real_world_data_cutoff`.
-4. Point the frontend at the bucket so the wall can read it — set
-   `VITE_B2_PUBLIC_BASE` (the bucket's public URL base) in the root `.env`.
+3. **Generate a batch** — one loaded model, all the front pages, index published:
+   ```bash
+   rs-media batch --nations IND,USA --from-year 2026 --to-year 2027
+   ```
+   This generates each page locally, uploads to B2, presigns the URLs (private
+   bucket), and writes the media index. It prints the index URL.
+   It closes the M12/M13 checkpoint: images in B2 whose manifest hash carries
+   `simulation.fork_id` and `simulation.real_world_data_cutoff`.
+4. **Point the frontend at the index.** Set in the root `.env`:
+   - **Private bucket:** `VITE_MEDIA_INDEX_URL` = the presigned index URL the
+     batch printed.
+   - **Public bucket:** `VITE_B2_PUBLIC_BASE` = the bucket's public base, and
+     add `--public` to the batch.
 
-### B. Deploy the Worker (Cloudflare)
+> **Presigned URLs expire (B2 ceiling: 7 days).** With a private bucket the index
+> and image URLs lapse after a week — re-run `rs-media batch` and reset
+> `VITE_MEDIA_INDEX_URL` to refresh. A **public** bucket avoids the expiry
+> entirely and is free at this scale (a few small images, egress well under the
+> 1 GB/day free tier); `rs-media setup-cors` still applies.
+
+> Only **IND** and **USA** have simulated data past 2026 in the seeded world
+> (they were advanced during testing). Wider `--nations` / year ranges skip and
+> report missing sim-years without failing the batch.
+
+### B. Deploy the Worker (Cloudflare) — optional
 
 ```bash
 npm --prefix workers exec wrangler login      # interactive, one time
@@ -254,8 +280,8 @@ Set `VITE_AI_PROXY_URL` in the root `.env` to the deployed `workers.dev` URL.
 1. Repo **Settings → Pages → Source: GitHub Actions** (enables the workflow at
    `.github/workflows/deploy-pages.yml`, which already builds green).
 2. Repo **Settings → Secrets and variables → Actions**, add: `VITE_SUPABASE_URL`,
-   `VITE_SUPABASE_ANON_KEY`, `VITE_AI_PROXY_URL`, `VITE_B2_PUBLIC_BASE`,
-   and optionally `VITE_CESIUM_ION_TOKEN`.
+   `VITE_SUPABASE_ANON_KEY`, `VITE_AI_PROXY_URL`, `VITE_MEDIA_INDEX_URL` (private
+   bucket) or `VITE_B2_PUBLIC_BASE` (public), and optionally `VITE_CESIUM_ION_TOKEN`.
 3. For the monthly-sync workflow, also add `WORKER_URL` and `WORKER_SECRET`.
 4. Push to `main` (or re-run the workflow) → site publishes at
    `https://<user>.github.io/RealityShift/`.

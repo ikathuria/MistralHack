@@ -303,10 +303,19 @@ Tasks:
 - [x] `media/contracts.py` — `DivergenceBrief` and `NarrativeBeat` Pydantic models — Done: validate, and the cutoff==divergence_date invariant is enforced + tested
 - [x] `media/adapter.py` — **read-only** Supabase → `DivergenceBrief`. For forks, derive divergence as fork-vs-live at matching sim year — Done: verified against **live Supabase** for India @ 2027 (BJP reasoning, Reagan RAG parallel, India↔Pakistan protest chain → 4 beats). Beats are deterministic here; the LLM script pass moves to M14 rather than one `chat()` call in the adapter
 - [x] `media/provenance.py` — `simulation.*` metadata via `Pipeline.metadata(**kwargs)`, inside the canonical hash — Done: 5 offline tests prove `fork_id` and `real_world_data_cutoff` each flip the hash
-- [~] `media/storage.py` — `ObjectStorageSink` over `S3StorageBackend.for_backblaze()`, `KeyStrategy.CONTENT_ADDRESSABLE` — **written; blocked on B2 credentials** for the live round-trip
-- [x] `media/pricing.py` — `register_pricing()` recipes — Done: recipes written for the image/video models; live `compute_cost()` check needs a provider key
+- [x] `media/storage.py` — `ObjectStorageSink` over `S3StorageBackend.for_backblaze()`, `KeyStrategy.CONTENT_ADDRESSABLE` — Done: **live round-trip verified** against a real private B2 bucket
+- [x] `media/pricing.py` — `register_pricing()` recipes — Done (cloud path). Local generation is free, so pricing is moot for the default backend
 - [x] `.env.example` for the media layer; `.gitignore` covers `.env` and Python artifacts — Done: committed, no secrets
-- [ ] **Checkpoint:** one front-page image in B2, manifest verifying, fork fields inside the hash — **blocked on B2 + GMICloud credentials.** Everything up to the network boundary is built and tested; the manifest/hash half of the checkpoint is already proven offline.
+- [x] **Checkpoint:** one front-page image in B2, manifest verifying, fork fields inside the hash — **DONE and verified live.** Real SDXL-Turbo image in the private B2 bucket; `manifest.verify()` == True with `simulation.fork_id` + `real_world_data_cutoff` in the canonical hash.
+
+> **Decision (2 Aug): local generation, not GMICloud.** No hackathon credits
+> materialised, so image generation moved on-device — SDXL-Turbo via diffusers on
+> Apple Silicon (MPS), a Genblaze `SyncProvider`. Free, no API key. Genblaze
+> provenance + B2 storage are unchanged; only the pixels are made locally.
+> Diffusion can't render legible headline text, so a deterministic PIL layout
+> draws the newspaper (masthead, real headline, columns) and the model fills only
+> the illustration. The cloud (GMICloud) backend remains available via
+> `backend="cloud"`.
 
 ---
 
@@ -314,14 +323,15 @@ Tasks:
 **Goal:** A wall of newspaper front pages from a world that doesn't exist.
 
 Tasks:
-- [x] `media/pipelines/front_page.py` — `DivergenceBrief` → newspaper front page prompt → image — Done: pipeline built; prompt + provenance verified end-to-end via `rs-media front-page --dry-run` against live Supabase ("The India Dispatch, 2027"). Live image generation needs GMI key
-- [x] Visible synthetic-content watermark composited into every image — Done: `watermark.py` burns an "AI-GENERATED · RealityShift" band into the pixels (provider-independent, tested)
-- [~] `fallback_models` chain configured and **proven by forcing a failure** — chain configured (`seedream-5.0-lite` → `flux-1-schnell`); the forced-failure proof needs a live provider key
-- [ ] Batch generation across N nations via `Pipeline.abatch_run()` + `StepCache` — not started
-- [x] `media/index.py` — per-fork index `index/{world_id}/media.json`, replacing the proposed `media_assets` table — Done: index build/serialize/sort + result→entry extraction, tested; live B2 write needs keys
-- [ ] `src/lib/mediaIndex.ts` — typed fetch of the B2 index — not started
-- [ ] `src/components/FrontPageWall.tsx` — grid view, filterable by fork and sim-date — not started
-- [ ] **Checkpoint:** the front-page wall renders for one fork across ≥12 sim-months — blocked on B2 + GMICloud credentials
+- [x] `media/pipelines/front_page.py` — `DivergenceBrief` → newspaper front page → image — Done: local + cloud backends; **real SDXL-Turbo generation verified** ("The India Dispatch, 2027" with a generated diplomatic-handshake illustration)
+- [x] Visible synthetic-content watermark composited into every image — Done: burned into the pixels by the newspaper compositor (provider-independent, tested)
+- [x] `newspaper.py` — deterministic PIL layout (masthead, dated header, real headline, columns) with the generated illustration below the fold — Done: diffusion can't render legible headlines, so only the illustration is generative
+- [x] Batch generation across N nations — Done: `rs-media batch` reuses one loaded model, uploads to B2, presigns, publishes the index. Verified live: IND/USA × 2026–2027 → 4 real pages
+- [x] `media/index.py` — per-fork index `index/{world_id}/media.json`, replacing the proposed `media_assets` table — Done: build/serialize/sort + result→entry, **live B2 write verified**
+- [x] Private-bucket serving — Done: `presign.py` (presigned GET URLs), `rs-media setup-cors`, and `VITE_MEDIA_INDEX_URL`. A private bucket needs no public read and no Worker proxy
+- [x] `src/lib/mediaIndex.ts` — typed fetch of the index (presigned for private, base for public) — Done
+- [x] `src/components/FrontPageWall.tsx` + `WallPage` (`/wall`) — grid, filterable by sim-year — Done
+- [x] **Checkpoint:** the front-page wall renders real covers — **DONE and verified live.** All 4 generated covers load in the browser from the private bucket (naturalWidth confirms). Caveat: presigned URLs expire at B2's 7-day ceiling; re-run the batch to refresh (or use a public bucket).
 
 ---
 

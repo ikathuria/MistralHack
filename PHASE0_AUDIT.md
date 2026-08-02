@@ -1,5 +1,12 @@
 # Phase 0 Audit — Media Layer for the Backblaze Generative AI Media Hackathon
 
+> **Status (2 Aug 2026): superseded by implementation.** This is the original
+> Phase 0 audit, kept as the point-in-time record. The media layer is now built
+> and verified live — see `PLAN.md` (M12–M13 done), `B2_AND_GENBLAZE.md`, and
+> `PROVIDERS.md`. Notable change from the audit: generation runs **locally**
+> (SDXL-Turbo), not GMICloud, since no hackathon credits materialised.
+
+
 **Date:** 2026-07-27 · **Status:** awaiting approval · **No production code written.**
 
 ---
