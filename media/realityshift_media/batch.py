@@ -38,17 +38,28 @@ def run_batch(
     backend: str = "local",
     private: bool = True,
     out_dir: str = "out",
+    broadcasts: list[tuple[str, int]] | None = None,
 ) -> BatchResult:
-    """Generate front pages for each (nation_iso, year) and publish the index.
+    """Generate front pages for each (nation_iso, year) — and optionally a
+    broadcast for each (nation, year) in `broadcasts` — then publish the index.
 
     Uploads to B2 if credentials are set (presigned when `private`); otherwise
-    saves PNGs + index under `out_dir`.
+    saves media + index under `out_dir`.
     """
     upload = _have_b2()
     provider = make_local_provider() if backend == "local" else None
 
     entries: list[MediaEntry] = []
     failed: list[str] = []
+
+    for nation, year in (broadcasts or []):
+        tag = f"broadcast {nation}@{year}"
+        try:
+            entry = _broadcast_entry(nation, year, world_id, out_dir, upload, private,
+                                     illustrator=(provider._illustration if provider else None))
+            entries.append(entry)
+        except Exception as exc:  # noqa: BLE001
+            failed.append(f"{tag}: {exc}")
 
     for nation, year in pairs:
         tag = f"{nation}@{year}"
@@ -86,6 +97,32 @@ def run_batch(
     return BatchResult(
         world_id=world_id, generated=len(entries), failed=failed,
         index_url=index_url, private=private and upload,
+    )
+
+
+def _broadcast_entry(nation: str, year: int, world_id: str, out_dir: str,
+                     upload: bool, private: bool, illustrator) -> MediaEntry:
+    """Generate one broadcast, upload it (or keep local), return its index entry."""
+    from .broadcast import generate_broadcast
+    from .provenance import simulation_metadata
+
+    brief = build_brief(nation, year, world_id=world_id)
+    res = generate_broadcast(brief, out_dir=out_dir, illustrator=illustrator)
+
+    if upload:
+        from .presign import put_file
+        key = f"broadcasts/{world_id}/{nation}-{year}.mp4"
+        url = put_file(key, res["mp4"], "video/mp4")
+        if not private:
+            import os as _os
+            url = f"https://s3.{_os.environ['B2_REGION']}.backblazeb2.com/{_os.environ['B2_BUCKET']}/{key}"
+    else:
+        url = res["mp4"]
+
+    return MediaEntry(
+        sim_date=brief.sim_date.isoformat(), nation_iso=nation, kind="broadcast",
+        b2_url=url, manifest_uri="(embedded in mp4)", canonical_hash=res["canonical_hash"],
+        duration=res["duration"], provenance=simulation_metadata(brief),
     )
 
 

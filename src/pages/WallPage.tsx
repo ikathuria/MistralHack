@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import FrontPageWall from '../components/FrontPageWall';
+import BroadcastPlayer from '../components/BroadcastPlayer';
 
 /**
  * Full-width "front pages from a world that doesn't exist" wall.
@@ -38,7 +39,18 @@ export default function WallPage() {
         </Link>
       </header>
       <div style={{ padding: '8px 24px 32px' }}>
-        <FrontPageWall worldId={world} />
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: '4px 0 12px' }}>
+            📺 Divergence broadcast
+          </h2>
+          <BroadcastPlayer worldId={world} />
+        </section>
+        <section>
+          <h2 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: '4px 0 12px' }}>
+            🗞️ Front pages
+          </h2>
+          <FrontPageWall worldId={world} />
+        </section>
       </div>
     </div>
   );

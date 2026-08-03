@@ -85,6 +85,15 @@ def configure_cors(origins: list[str] | None = None) -> None:
     )
 
 
+def put_file(key: str, path: str, content_type: str) -> str:
+    """Upload a local file to B2 and return a presigned GET URL for it."""
+    with open(path, "rb") as fh:
+        _client().put_object(
+            Bucket=os.environ["B2_BUCKET"], Key=key, Body=fh, ContentType=content_type,
+        )
+    return presign_get(key)
+
+
 def put_index(key: str, body: bytes) -> str:
     """Upload the media index JSON to B2 and return a presigned GET URL for it.
 

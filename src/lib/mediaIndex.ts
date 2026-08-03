@@ -4,6 +4,17 @@
 // the sole source for the front-page wall — assets stream straight from B2 with
 // no Worker or Supabase round-trip. Shape mirrors media/realityshift_media/index.py.
 
+export interface SimProvenance {
+  fork_id: string;
+  parent_fork_id: string | null;
+  divergence_date: string;
+  sim_date: string;
+  real_world_data_cutoff: string;
+  nation_iso: string | null;
+  is_counterfactual: boolean;
+  consensus_reality: boolean;
+}
+
 export interface MediaEntry {
   sim_date: string;            // ISO date
   nation_iso: string | null;
@@ -11,6 +22,8 @@ export interface MediaEntry {
   b2_url: string;
   manifest_uri: string;
   canonical_hash: string;
+  duration?: number | null;         // seconds, broadcasts
+  provenance?: SimProvenance | null; // simulation.* block, broadcasts
 }
 
 export interface MediaIndex {

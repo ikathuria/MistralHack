@@ -21,6 +21,8 @@ class MediaEntry:
     b2_url: str            # durable, credential-free asset URL
     manifest_uri: str      # provenance manifest location in B2
     canonical_hash: str    # ties the asset to its manifest
+    duration: float | None = None          # seconds, for broadcasts
+    provenance: dict | None = None          # simulation.* block, for the UI panel
 
 
 def index_key(world_id: str) -> str:

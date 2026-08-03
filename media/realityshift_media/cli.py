@@ -38,7 +38,14 @@ def main(argv: list[str] | None = None) -> int:
     bt.add_argument("--world", default="live")
     bt.add_argument("--backend", default="local", choices=["local", "cloud"])
     bt.add_argument("--public", action="store_true", help="Store public URLs instead of presigned (public bucket).")
+    bt.add_argument("--broadcast", default="", help="Comma-separated nations to also make a broadcast for (uses --to-year).")
     bt.add_argument("--out", default="out", help="Local output dir when B2 credentials are absent.")
+
+    bc = sub.add_parser("broadcast", help="Generate a divergence broadcast (video).")
+    bc.add_argument("--nation", required=True)
+    bc.add_argument("--year", required=True, type=int)
+    bc.add_argument("--world", default="live")
+    bc.add_argument("--out", default="out")
 
     sub.add_parser("setup-cors", help="Set the B2 bucket CORS rule so the browser can read media.")
 
@@ -48,6 +55,8 @@ def main(argv: list[str] | None = None) -> int:
         return _front_page(args)
     if args.command == "batch":
         return _batch(args)
+    if args.command == "broadcast":
+        return _broadcast(args)
     if args.command == "setup-cors":
         from .presign import configure_cors
         configure_cors()
@@ -61,12 +70,15 @@ def _batch(args) -> int:
 
     nations = [n.strip().upper() for n in args.nations.split(",") if n.strip()]
     pairs = year_range(nations, args.from_year, args.to_year)
-    print(f"generating {len(pairs)} front pages ({len(nations)} nations × "
-          f"{args.to_year - args.from_year + 1} years) via {args.backend}…")
+    # Broadcasts use the latest year (--to-year) for each requested nation.
+    bc_nations = [n.strip().upper() for n in args.broadcast.split(",") if n.strip()]
+    broadcasts = [(n, args.to_year) for n in bc_nations]
+    print(f"generating {len(pairs)} front pages + {len(broadcasts)} broadcast(s) "
+          f"via {args.backend}…")
 
     res = run_batch(
         pairs, world_id=args.world, backend=args.backend,
-        private=not args.public, out_dir=args.out,
+        private=not args.public, out_dir=args.out, broadcasts=broadcasts,
     )
     print(f"\ngenerated: {res.generated}   failed: {len(res.failed)}")
     for f in res.failed:
@@ -75,6 +87,27 @@ def _batch(args) -> int:
     print("set VITE_B2_PUBLIC_BASE so the wall reads this index." if res.index_url and res.index_url.startswith("http")
           else "no B2 creds — wrote images + index locally under the output dir.")
     return 0 if res.generated else 1
+
+
+def _broadcast(args) -> int:
+    from .adapter import build_brief
+    from .broadcast import generate_broadcast
+
+    brief = build_brief(args.nation, args.year, world_id=args.world)
+    print(f"generating broadcast for {args.nation} @ {args.year} (local; this takes a minute)…")
+    res = generate_broadcast(brief, out_dir=args.out)
+    print(f"mp4: {res['mp4']}  ({res['duration']}s)")
+    print(f"manifest verifies: {res['verified']}  hash: {res['canonical_hash'][:16]}…")
+
+    # Upload to B2 + register in the media index when credentials are present.
+    if os.environ.get("B2_BUCKET") and os.environ.get("B2_KEY_ID"):
+        from .presign import put_file
+        key = f"broadcasts/{args.world}/{args.nation}-{args.year}.mp4"
+        url = put_file(key, res["mp4"], "video/mp4")
+        print(f"uploaded to B2; presigned url:\n  {url[:90]}…")
+        print("add this broadcast to the wall index by re-running `rs-media batch` "
+              "(broadcasts and front pages share the index).")
+    return 0 if res["verified"] else 1
 
 
 def _front_page(args) -> int:

@@ -47,3 +47,7 @@ __pycache__/
 
 # Local dev mock of the B2 media index (real index lives in B2)
 public/index/
+
+# Generated media output (lives in B2, not git)
+out/
+media/out/
