@@ -26,14 +26,22 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
     return () => { live = false; };
   }, [worldId]);
 
-  // Close modal on Escape key
+  // Close modal on Escape key & lock scroll when open
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setSelectedImage(null);
     };
+    if (selectedImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [selectedImage]);
 
   const simDates = useMemo(
     () => Array.from(new Set((entries ?? []).map(e => e.sim_date))).sort(),
@@ -131,7 +139,7 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
             background: 'rgba(4, 6, 12, 0.96)',
             backdropFilter: 'blur(16px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 10, animation: 'fadeIn 0.15s ease-out',
+            padding: 12, animation: 'fadeIn 0.15s ease-out',
           }}
         >
           <div
@@ -139,8 +147,8 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
             className="game-panel"
             style={{
               position: 'relative',
-              width: '96vw', height: '96vh',
-              maxWidth: 1400, maxHeight: '96vh',
+              width: '92vw', height: '90vh',
+              maxWidth: 1300, maxHeight: '90vh',
               display: 'flex', flexDirection: 'column',
               padding: 12, background: '#080c16',
               border: '3px solid var(--accent-cyan)',
@@ -187,7 +195,7 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
             <div
               onClick={() => setSelectedImage(null)}
               style={{
-                overflow: 'auto', flex: 1, width: '100%', height: '100%',
+                overflow: 'auto', flex: '1 1 0%', minHeight: 0, width: '100%', height: '100%',
                 display: 'flex', justifyContent: 'center', alignItems: 'center',
                 background: '#000', borderRadius: 8, border: '2px solid var(--game-border-ink)',
                 padding: 8, boxSizing: 'border-box', cursor: 'zoom-out',
