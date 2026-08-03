@@ -238,12 +238,15 @@ Everything is built and verified end to end against a real bucket. One account
    ```bash
    rs-media setup-cors
    ```
-3. **Generate a batch** — one loaded model, all the front pages, index published:
+3. **Generate a batch** — one loaded model, all the front pages, a broadcast,
+   index published:
    ```bash
-   rs-media batch --nations IND,USA --from-year 2026 --to-year 2027
+   rs-media batch --nations IND,USA --from-year 2026 --to-year 2027 --broadcast IND
    ```
-   This generates each page locally, uploads to B2, presigns the URLs (private
-   bucket), and writes the media index. It prints the index URL.
+   This generates each page locally, a ~45-75s divergence broadcast (video) for
+   each `--broadcast` nation, uploads to B2, presigns the URLs (private bucket),
+   and writes the media index. It prints the index URL. (`rs-media broadcast
+   --nation IND --year 2027` makes just a broadcast.)
    It closes the M12/M13 checkpoint: images in B2 whose manifest hash carries
    `simulation.fork_id` and `simulation.real_world_data_cutoff`.
 4. **Point the frontend at the index.** Set in the root `.env`:

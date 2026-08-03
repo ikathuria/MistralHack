@@ -339,14 +339,14 @@ Tasks:
 **Goal:** A ~45–75s news segment reporting events that never happened, with verifiable provenance.
 
 Tasks:
-- [ ] Script generation from beats via `chat()` — its documented role is "driving media steps from an LLM". Not manifest-integrated, so stash LLM details in `step.metadata` on the downstream media step — Done when: a brief produces an anchor script with per-beat timing
-- [ ] TTS anchor voiceover, fictional anchor identity, spoken synthetic disclaimer at the head — Done when: audio matches script length within tolerance
-- [ ] Per-beat b-roll stills → image→video animation. Use `seedance-1-0-pro-fast` (per-asset) for iteration, reserve per-second models for the hero broadcast — Done when: five beats animate
-- [ ] Composite via `FFmpegCompositor` (`step_type=StepType.MIX`, `input_from=[...]`) — video + VO + music bed + chyrons showing fork ID, sim-date, divergence date — Done when: a single MP4 muxes correctly
-- [ ] `AgentLoop` quality gate: generate → evaluate against beat intent → retry with tightened prompt. **`max_iterations=2`, hero broadcast only** — a retry storm silently costs 3× — Done when: every attempt is logged with `parent_run_id`
-- [ ] `Mp4Handler.embed()` the manifest; verify extraction round-trips — Done when: `genblaze verify` passes on the downloaded file
-- [ ] `src/components/BroadcastPlayer.tsx` + `src/components/ProvenancePanel.tsx` — player with extracted manifest, fork lineage, `real_world_data_cutoff`, and a verify button — Done when: provenance is visible in the UI without leaving the app
-- [ ] **Checkpoint:** one broadcast playable in the deployed app, manifest extracts and verifies
+- [x] Script generation from beats — Done: Groq Llama 3.3 70B writes the anchor VO (disclaimer-first) with a deterministic fallback. Local/free, not `chat()` — same reasoning as the local image backend
+- [x] TTS anchor voiceover + spoken synthetic disclaimer at the head — Done: macOS `say` (on-device); each beat clip is timed to its narration so A/V stay in lock-step
+- [x] Per-beat b-roll → animation — Done: SDXL-Turbo still per beat, ffmpeg Ken Burns (zoompan). Local, so no per-second cloud cost; the seedance note is moot
+- [x] Composite — video + VO + chyrons (fork ID, sim-date) + persistent watermark — Done via ffmpeg. Chrome is baked in PIL and overlaid statically (only b-roll zooms) so the watermark never crops off. Music bed cut for reliability
+- [~] `AgentLoop` quality gate — skipped: local generation is free, so the retry-cost rationale doesn't apply; not worth the deadline-day risk
+- [x] `Mp4Handler.embed()` the manifest; verify extraction round-trips — Done: **`genblaze verify` returns OK** on the file, `extract` shows the `simulation.*` block
+- [x] `BroadcastPlayer.tsx` + `ProvenancePanel.tsx` — player with fork lineage, `real_world_data_cutoff`, canonical hash, and the verify instruction — Done: provenance visible in-app
+- [x] **Checkpoint:** one broadcast playable, manifest extracts and verifies — **DONE and verified live.** India @ 2027, 57s, plays on `/wall` from the private bucket with the provenance panel; manifest verifies. (Playable locally — the *deployed* app still pending the Pages deploy.)
 
 ---
 

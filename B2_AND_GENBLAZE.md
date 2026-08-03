@@ -75,11 +75,18 @@ plane needs:
 
 ### Verified live
 
-`rs-media batch --nations IND,USA --from-year 2026 --to-year 2027` produced 4
-real front pages, uploaded them to the private bucket, presigned the URLs, wrote
-the index, and the front-page wall rendered all four covers in the browser
-(image `naturalWidth` = 1024 confirms the load) — with `manifest.verify()` ==
-True and the fork provenance in the hash.
+`rs-media batch --nations IND,USA --from-year 2026 --to-year 2027 --broadcast IND`
+produced 4 front pages **and a 57s divergence broadcast**, uploaded them to the
+private bucket, presigned the URLs, wrote the index — and `/wall` rendered the
+broadcast (with its provenance panel) above all four covers, streamed from the
+private bucket. `manifest.verify()` == True, and on the broadcast MP4 the CLI
+`genblaze verify` returns OK while `genblaze extract` prints the `simulation.*`
+block — the demo's provenance moment, on a real file.
+
+The broadcast is the strongest instance of the provenance idea: a 45-75s news
+segment about events that never happened, whose embedded manifest attests
+`real_world_data_cutoff` — a claim a viewer can re-derive from the downloaded
+file with one command.
 
 ### Cost note
 

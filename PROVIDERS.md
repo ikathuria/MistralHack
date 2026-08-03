@@ -7,8 +7,10 @@ Backblaze Generative AI Media Hackathon submission.
 
 | Provider | Model | Modality | Role |
 |---|---|---|---|
-| **Local (on-device)** | **SDXL-Turbo** (`stabilityai/sdxl-turbo`) | Image | Generates the editorial illustration on each newspaper front page. Runs via 🤗 diffusers on Apple Silicon (Metal/MPS). No cloud provider, no API key, no per-image cost. |
-| Deterministic (non-ML) | — | Image | The newspaper *layout* — masthead, dated header, real headline, columns, synthetic-content watermark — is composited with Pillow. Diffusion models can't render legible headline text, so only the illustration is generative; the page around it is exact. |
+| **Local (on-device)** | **SDXL-Turbo** (`stabilityai/sdxl-turbo`) | Image | The editorial illustration on each front page, and the per-beat b-roll in the broadcast. Runs via 🤗 diffusers on Apple Silicon (Metal/MPS). No cloud provider, no API key, no per-image cost. |
+| **macOS `say`** | system voice (e.g. Samantha) | Audio (TTS) | The broadcast's anchor voiceover. On-device, free. A spoken synthetic-content disclaimer leads every segment. |
+| **Groq** | **Llama 3.3 70B** (`llama-3.3-70b-versatile`) | Text | Writes the broadcast anchor script from the divergence beats (free tier; deterministic fallback if unavailable). |
+| Deterministic (non-ML) | — | Image / Video | Newspaper *layout* and broadcast *chrome* (masthead, headline, chyron, columns, synthetic watermark) are composited with Pillow; ffmpeg does Ken Burns motion and the A/V mux. Diffusion can't render legible text, so only the illustration/b-roll is generative; everything around it is exact. |
 
 **Orchestration & provenance:** [Genblaze](https://github.com/backblaze-labs/genblaze)
 (`genblaze` 0.4.5 / `genblaze-core` 0.3.8 / `genblaze-s3` 0.3.6). The local model
