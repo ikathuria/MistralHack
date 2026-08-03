@@ -121,17 +121,17 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
         ))}
       </div>
 
-      {/* Lightbox Modal for Full Resolution Newspaper Reading */}
+      {/* Full-Screen Theater Lightbox Box for Newspaper Reading */}
       {selectedImage && (
         <div
           onClick={() => setSelectedImage(null)}
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            zIndex: 9999,
-            background: 'rgba(5, 7, 15, 0.94)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            padding: 16, overflowY: 'auto', animation: 'fadeIn 0.2s ease-out',
+            zIndex: 99999,
+            background: 'rgba(4, 6, 12, 0.96)',
+            backdropFilter: 'blur(16px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 10, animation: 'fadeIn 0.15s ease-out',
           }}
         >
           <div
@@ -139,11 +139,12 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
             className="game-panel"
             style={{
               position: 'relative',
-              maxWidth: '94vw', maxHeight: '94vh',
-              display: 'flex', flexDirection: 'column', alignItems: 'center',
-              padding: 16, background: '#0b0f19',
+              width: '96vw', height: '96vh',
+              maxWidth: 1400, maxHeight: '96vh',
+              display: 'flex', flexDirection: 'column',
+              padding: 12, background: '#080c16',
               border: '3px solid var(--accent-cyan)',
-              boxShadow: '0 0 30px rgba(0, 240, 255, 0.35)',
+              boxShadow: '0 0 40px rgba(0, 240, 255, 0.4)',
               boxSizing: 'border-box',
               overflow: 'hidden',
             }}
@@ -151,54 +152,60 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
             {/* Header toolbar */}
             <div style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 12, gap: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10,
+              marginBottom: 10, gap: 16, borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: 8,
               flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="game-badge game-badge-yellow" style={{ fontSize: 12, padding: '3px 8px' }}>
+                <span className="game-badge game-badge-yellow" style={{ fontSize: 13, padding: '4px 10px' }}>
                   🗞️ {countryName(selectedImage.nation_iso)} · {isoYear(selectedImage.sim_date)}
                 </span>
-                <span style={{ fontSize: 11, fontFamily: 'var(--font-heading)', color: 'var(--accent-cyan)' }}>
-                  FULL RESOLUTION EDITION
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-heading)', color: 'var(--accent-cyan)', letterSpacing: 0.5 }}>
+                  FULL-SCREEN NEWSPAPER EDITION
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <a
                   href={selectedImage.b2_url}
                   target="_blank"
                   rel="noreferrer"
                   className="game-button game-button-cyan"
-                  style={{ height: 32, padding: '0 12px', fontSize: 11, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                  style={{ height: 34, padding: '0 14px', fontSize: 11, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
                   🔗 OPEN ORIGINAL FILE
                 </a>
                 <button
                   onClick={() => setSelectedImage(null)}
                   className="game-button game-button-magenta"
-                  style={{ height: 32, padding: '0 12px', fontSize: 11 }}
+                  style={{ height: 34, padding: '0 16px', fontSize: 12, fontWeight: 800 }}
                 >
-                  ✖ CLOSE
+                  ✖ CLOSE [ESC]
                 </button>
               </div>
             </div>
 
-            {/* High-res Image preview */}
-            <div style={{
-              overflow: 'auto', flex: 1, width: '100%',
-              display: 'flex', justifyContent: 'center', alignItems: 'center',
-              background: '#000', borderRadius: 6, border: '2px solid var(--game-border-ink)',
-              padding: 4, boxSizing: 'border-box',
-            }}>
+            {/* Full-screen High-res Image Container */}
+            <div
+              onClick={() => setSelectedImage(null)}
+              style={{
+                overflow: 'auto', flex: 1, width: '100%', height: '100%',
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                background: '#000', borderRadius: 8, border: '2px solid var(--game-border-ink)',
+                padding: 8, boxSizing: 'border-box', cursor: 'zoom-out',
+              }}
+            >
               <img
                 src={selectedImage.b2_url}
                 alt={`Front page full view — ${countryName(selectedImage.nation_iso)}`}
+                onClick={(e) => e.stopPropagation()}
                 style={{
-                  maxHeight: 'calc(92vh - 90px)',
+                  maxHeight: '100%',
                   maxWidth: '100%',
                   width: 'auto',
                   height: 'auto',
                   objectFit: 'contain',
                   display: 'block',
+                  borderRadius: 4,
+                  boxShadow: '0 0 35px rgba(0, 0, 0, 0.9)',
                 }}
               />
             </div>
