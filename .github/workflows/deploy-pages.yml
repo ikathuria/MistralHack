@@ -30,8 +30,9 @@ jobs:
       - run: npm ci
 
       # The frontend bakes VITE_* values in at build time, so they must be
-      # present here. All four are safe to expose in a browser bundle:
-      # the Supabase anon key is protected by row-level security.
+      # present here. All are safe to expose in a browser bundle: the Supabase
+      # anon key is protected by row-level security, and the media index URL is
+      # a time-limited presigned link.
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -39,6 +40,7 @@ jobs:
           VITE_CESIUM_ION_TOKEN: ${{ secrets.VITE_CESIUM_ION_TOKEN }}
           VITE_AI_PROXY_URL: ${{ secrets.VITE_AI_PROXY_URL }}
           VITE_B2_PUBLIC_BASE: ${{ secrets.VITE_B2_PUBLIC_BASE }}
+          VITE_MEDIA_INDEX_URL: ${{ secrets.VITE_MEDIA_INDEX_URL }}
         run: npm run build
 
       # Pages serves static files with no SPA rewrite, so a hard load of
