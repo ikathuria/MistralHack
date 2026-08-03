@@ -103,8 +103,11 @@ def _broadcast(args) -> int:
     if os.environ.get("B2_BUCKET") and os.environ.get("B2_KEY_ID"):
         from .presign import put_file
         key = f"broadcasts/{args.world}/{args.nation}-{args.year}.mp4"
-        url = put_file(key, res["mp4"], "video/mp4")
-        print(f"uploaded to B2; presigned url:\n  {url[:90]}…")
+        try:
+            url = put_file(key, res["mp4"], "video/mp4")
+            print(f"uploaded to B2; presigned url:\n  {url[:90]}…")
+        except Exception as e:
+            print(f"B2 upload skipped: {e}")
         print("add this broadcast to the wall index by re-running `rs-media batch` "
               "(broadcasts and front pages share the index).")
     return 0 if res["verified"] else 1

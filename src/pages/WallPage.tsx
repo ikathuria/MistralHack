@@ -15,41 +15,52 @@ export default function WallPage() {
 
   return (
     <div style={{
-      width: '100vw', minHeight: '100vh', background: 'var(--surface-base)',
-      color: 'var(--text-primary)', overflowY: 'auto',
+      width: '100vw', height: '100vh', background: 'var(--bg-deep-space)',
+      color: '#fff', overflowY: 'auto',
     }}>
       <header style={{
-        display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap',
-        padding: '20px 24px 8px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+        padding: '20px 28px',
+        borderBottom: '3px solid var(--game-border-ink)',
+        background: 'var(--bg-hud-panel)',
       }}>
-        <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 800, letterSpacing: -0.4 }}>
-          🗞️ Front pages from a world that doesn't exist
-        </div>
-        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-          world: {world}
+        <div>
+          <div className="game-font-display" style={{
+            fontSize: 26, fontWeight: 800, color: 'var(--accent-yellow)',
+            textShadow: '2px 2px 0px #0b0f19, 0 0 12px rgba(255,230,0,0.4)',
+          }}>
+            🗞️ FORK MEDIA NEWSSTAND & KIOSK
+          </div>
+          <div style={{ fontSize: 11, fontFamily: 'var(--font-heading)', color: 'var(--accent-cyan)', marginTop: 2 }}>
+            AUTHENTICATED COUNTERFACTUAL BROADCASTS · WORLD: {world.toUpperCase()}
+          </div>
         </div>
         <Link
           to="/"
-          style={{
-            marginLeft: 'auto', fontSize: 'var(--font-size-sm)',
-            color: 'var(--accent-text)', textDecoration: 'none',
-          }}
+          className="game-button game-button-cyan"
+          style={{ height: 38, padding: '0 16px', fontSize: 12 }}
         >
-          ← Globe
+          ← GLOBE WARGAME
         </Link>
       </header>
-      <div style={{ padding: '8px 24px 32px' }}>
-        <section style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: '4px 0 12px' }}>
-            📺 Divergence broadcast
-          </h2>
-          <BroadcastPlayer worldId={world} />
+
+      <div style={{ padding: '24px 28px 40px', maxWidth: 1400, margin: '0 auto' }}>
+        <section style={{ marginBottom: 36 }}>
+          <div className="game-badge game-badge-yellow" style={{ marginBottom: 12, fontSize: 12, padding: '4px 10px' }}>
+            📺 DIVERGENCE BROADCAST STUDIO
+          </div>
+          <div className="game-panel" style={{ padding: 20 }}>
+            <BroadcastPlayer worldId={world} />
+          </div>
         </section>
+
         <section>
-          <h2 style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, margin: '4px 0 12px' }}>
-            🗞️ Front pages
-          </h2>
-          <FrontPageWall worldId={world} />
+          <div className="game-badge game-badge-magenta" style={{ marginBottom: 12, fontSize: 12, padding: '4px 10px' }}>
+            🗞️ NEWSPAPER FRONT PAGE GALLERY
+          </div>
+          <div className="game-panel" style={{ padding: 20 }}>
+            <FrontPageWall worldId={world} />
+          </div>
         </section>
       </div>
     </div>

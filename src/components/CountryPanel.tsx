@@ -28,12 +28,36 @@ function fmt(value: number, decimals: number): string {
 function IndicatorRow({ name, value }: { name: string; value: number | undefined }) {
   const meta = INDICATOR_LABELS[name];
   if (!meta) return null;
+  
+  // Calculate relative fill percentage for arcade health bar
+  let pct = 50;
+  if (value !== undefined) {
+    if (name === 'gdp_per_capita') pct = Math.min(100, Math.max(5, (Math.log1p(value) / Math.log1p(100000)) * 100));
+    else if (name === 'population') pct = Math.min(100, Math.max(5, (Math.log1p(value) / Math.log1p(1500000000)) * 100));
+    else if (name === 'tax_rate') pct = Math.min(100, (value / 45) * 100);
+    else if (name === 'unemployment') pct = Math.min(100, (value / 25) * 100);
+    else pct = Math.min(100, (value / 8) * 100); // spend indicators
+  }
+
+  const barColor = name === 'military_spend' ? 'var(--accent-magenta)'
+    : name === 'gdp_per_capita' ? 'var(--accent-yellow)'
+    : name === 'education_spend' || name === 'healthcare_spend' ? 'var(--accent-cyan)'
+    : 'var(--accent-green)';
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-      <span style={{ color: '#9ca3af' }}>{meta.label}</span>
-      <span style={{ fontWeight: 500 }}>
-        {value !== undefined ? `${fmt(value, meta.decimals)} ${meta.unit}`.trim() : '—'}
-      </span>
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 11, fontWeight: 600 }}>{meta.label}</span>
+        <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 12, color: '#fff' }}>
+          {value !== undefined ? `${fmt(value, meta.decimals)} ${meta.unit}`.trim() : '—'}
+        </span>
+      </div>
+      <div className="game-stat-bar-container">
+        <div
+          className="game-stat-bar-fill"
+          style={{ width: `${pct}%`, background: barColor, boxShadow: `0 0 6px ${barColor}` }}
+        />
+      </div>
     </div>
   );
 }
@@ -41,9 +65,21 @@ function IndicatorRow({ name, value }: { name: string; value: number | undefined
 function CountryData({ data }: { data: CountryState }) {
   return (
     <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-      <div style={{ marginBottom: 12, color: '#9ca3af', fontSize: 11 }}>
-        Simulated year: <strong style={{ color: '#fff' }}>{data.year}</strong>
-        &nbsp;·&nbsp;Updated: {new Date(data.last_updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+        marginTop: 6,
+        paddingTop: 6,
+        borderTop: '1px dashed rgba(255,255,255,0.15)',
+      }}>
+        <div className="game-badge game-badge-yellow">
+          SIM YEAR {data.year}
+        </div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+          Updated: {new Date(data.last_updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+        </div>
       </div>
       {Object.keys(INDICATOR_LABELS).map(key => (
         <IndicatorRow key={key} name={key} value={data.indicators[key]} />
@@ -88,29 +124,30 @@ export default function CountryPanel() {
         onSuccess={() => { setShowAuth(false); handleTakeOver(); }}
       />
     )}
-    <div style={{
-      // Offset below the app header so the panel does not cover the brand,
-      // search box, and dashboard link; zIndex above the header so the panel
-      // wins where they do overlap.
-      position: 'absolute', top: 64, right: 0, width: 300, height: 'calc(100vh - 64px)',
-      background: 'var(--surface-floating)', backdropFilter: 'var(--surface-floating-blur)',
-      color: '#fff', padding: '20px 16px', overflowY: 'auto',
-      borderLeft: '1px solid rgba(255,255,255,0.1)', boxSizing: 'border-box',
-      zIndex: 35,
-    }}>
+    <div
+      className="game-panel"
+      style={{
+        position: 'absolute', top: 76, right: 16, width: 330, maxHeight: 'calc(100vh - 96px)',
+        color: '#fff', padding: '18px 16px', overflowY: 'auto',
+        boxSizing: 'border-box',
+        zIndex: 35,
+      }}
+    >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>
-            Selected Country
+          <div className="game-badge" style={{ marginBottom: 4 }}>
+            NATIONAL DOSSIER
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>{countryName(selectedCountry)}</div>
+          <div className="game-font-heading" style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent-yellow)' }}>
+            {countryName(selectedCountry)}
+          </div>
         </div>
         <button
           onClick={() => selectCountry(null)}
+          className="game-button game-button-dark"
           style={{
-            background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-            fontSize: 20, lineHeight: 1, padding: 4,
+            padding: '2px 8px', fontSize: 16, lineHeight: 1, minWidth: 28, height: 28,
           }}
           aria-label="Close panel"
         >
@@ -119,20 +156,17 @@ export default function CountryPanel() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {(['indicators', 'decisions'] as PanelTab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
+            className={`game-button ${tab === t ? 'game-button-cyan' : 'game-button-dark'}`}
             style={{
-              flex: 1, padding: '5px 0', borderRadius: 6, border: 'none',
-              background: tab === t ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: tab === t ? '#fff' : 'var(--text-muted)',
-              cursor: 'pointer', fontSize: 11, fontWeight: 600,
-              textTransform: 'uppercase', letterSpacing: 0.5,
+              flex: 1, padding: '6px 0', fontSize: 11, height: 32,
             }}
           >
-            {t === 'indicators' ? 'Indicators' : 'Agent Log'}
+            {t === 'indicators' ? '📊 STATS' : '📜 AGENT LOG'}
           </button>
         ))}
       </div>
@@ -140,7 +174,7 @@ export default function CountryPanel() {
       {/* Body */}
       {tab === 'indicators' ? (
         !data
-          ? <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>
+          ? <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 20 }}>Loading indicators…</div>
           : <CountryData data={data} />
       ) : (
         <DecisionLog countryCode={selectedCountry} />
@@ -148,29 +182,30 @@ export default function CountryPanel() {
 
       {/* Take Over button — only on live world */}
       {isLive && (
-        <div style={{ marginTop: 20 }}>
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: '2px dashed rgba(255,255,255,0.15)' }}>
           {takeoverError && (
             <div style={{
-              color: '#f87171', fontSize: 11, marginBottom: 8,
-              background: 'rgba(248,113,113,0.1)', padding: '6px 10px', borderRadius: 6,
+              color: '#FF2E93', fontSize: 11, marginBottom: 8,
+              background: 'rgba(255,46,147,0.15)', padding: '6px 10px', borderRadius: 6,
+              border: '1px solid var(--accent-magenta)',
+              fontFamily: 'var(--font-heading)',
             }}>
-              {takeoverError}
+              ⚠️ {takeoverError}
             </div>
           )}
           <button
             onClick={handleTakeOver}
             disabled={takingOver}
+            className="game-button game-button-green"
             style={{
-              width: '100%', padding: '11px 0', borderRadius: 8, border: 'none',
-              background: takingOver ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.8)',
-              color: '#fff', fontSize: 13, fontWeight: 700,
-              cursor: takingOver ? 'default' : 'pointer',
+              width: '100%', padding: '12px 0', fontSize: 14,
+              boxShadow: 'var(--hud-shadow), var(--hud-shadow-glow-green)',
             }}
           >
-            {takingOver ? '⏳ Forking universe…' : `🎮 Take Over ${countryName(selectedCountry)}`}
+            {takingOver ? '⏳ FORKING UNIVERSE…' : `🎮 TAKE OVER ${countryName(selectedCountry).toUpperCase()}`}
           </button>
-          <div style={{ color: 'var(--text-faint)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
-            {user ? 'Forks the simulation — your parallel universe' : 'Sign in to take control'}
+          <div style={{ color: 'var(--text-muted)', fontSize: 10, textAlign: 'center', marginTop: 6, fontFamily: 'var(--font-heading)' }}>
+            {user ? 'FORKS SIMULATION INTO PARALLEL UNIVERSE' : 'SIGN IN TO COMMAND THIS NATION'}
           </div>
         </div>
       )}

@@ -4,7 +4,8 @@ import { useWorldStore } from '../store/worldStore';
 import type { Divergence } from '../store/worldStore';
 import DivergenceCard from '../components/DivergenceCard';
 import WorldEventsFeed from '../components/WorldEventsFeed';
-import Globe from '../components/Globe';
+import CountryLeaderboard from '../components/CountryLeaderboard';
+import CountryTable from '../components/CountryTable';
 import CountryPanel from '../components/CountryPanel';
 import RegionPanel from '../components/RegionPanel';
 import { useRegionStore } from '../store/regionStore';
@@ -14,14 +15,12 @@ const WORKER_URL = (import.meta.env.VITE_AI_PROXY_URL as string | undefined) ?? 
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 10, padding: '16px 20px', flex: 1, minWidth: 160,
-    }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{value}</div>
-      {sub && <div style={{ color: 'var(--text-faint)', fontSize: 11, marginTop: 2 }}>{sub}</div>}
+    <div className="game-card" style={{ flex: 1, minWidth: 140, padding: '12px 14px' }}>
+      <div className="game-badge game-badge-yellow" style={{ fontSize: 9, marginBottom: 4 }}>
+        {label}
+      </div>
+      <div className="game-font-heading" style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>{value}</div>
+      {sub && <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 2, fontFamily: 'var(--font-heading)' }}>{sub}</div>}
     </div>
   );
 }
@@ -36,7 +35,7 @@ function TopDivergences({ divs }: { divs: Divergence[] }) {
     .slice(0, 5);
 
   if (!top5.length) {
-    return <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>No divergences recorded yet. Run the monthly sync to populate this.</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: 20, fontFamily: 'var(--font-heading)' }}>No divergences recorded yet. Run monthly sync to populate.</p>;
   }
 
   return (
@@ -54,29 +53,32 @@ function DivergenceTimeline({ divs }: { divs: Divergence[] }) {
       {/* Vertical line */}
       <div style={{
         position: 'absolute', left: 7, top: 0, bottom: 0,
-        width: 2, background: 'rgba(255,255,255,0.08)',
+        width: 3, background: 'var(--accent-cyan)',
       }} />
 
       {divs.slice(0, 20).map(d => {
         const mag = Object.values(d.delta).reduce((s, v) => s + Math.abs(v), 0);
-        const dot = mag > 5 ? '#f87171' : mag > 2 ? '#fbbf24' : '#34d399';
+        const dot = mag > 5 ? 'var(--accent-magenta)' : mag > 2 ? 'var(--accent-yellow)' : 'var(--accent-green)';
         return (
-          <div key={d.id} style={{ position: 'relative', marginBottom: 16 }}>
+          <div key={d.id} className="game-card" style={{ position: 'relative', marginBottom: 12, marginLeft: 6 }}>
             {/* Dot */}
             <div style={{
-              position: 'absolute', left: -20, top: 4,
-              width: 8, height: 8, borderRadius: '50%',
-              background: dot, border: '2px solid #111',
+              position: 'absolute', left: -24, top: 12,
+              width: 10, height: 10, borderRadius: '50%',
+              background: dot, border: '2px solid #000',
+              boxShadow: `0 0 8px ${dot}`,
             }} />
-            <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>{countryName(d.country_code)}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+              <span className="game-font-heading" style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent-yellow)' }}>
+                {countryName(d.country_code)}
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-heading)' }}>
                 {new Date(d.published_at).toLocaleDateString('en-GB', {
                   day: 'numeric', month: 'short', year: 'numeric',
                 })}
               </span>
             </div>
-            <p style={{ color: '#9ca3af', fontSize: 12, margin: '2px 0 0', lineHeight: 1.4 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 11, margin: '4px 0 0', lineHeight: 1.45 }}>
               {d.narrative.split('\n\nNews used:')[0].slice(0, 120)}…
             </p>
           </div>
@@ -90,26 +92,23 @@ export default function WorldDashboard() {
   const {
     recentDivergences,
     loadRecentDivergences,
-    setChoroplethMode,
-    choroplethMode,
     selectedCountry,
     worldEvents,
     loadWorldEvents,
     countriesTracked,
     loadCountriesTracked,
-    globeReady,
+    loadAllCountries,
   } = useWorldStore();
 
   const { selectedRegion } = useRegionStore();
-  const [activeTab, setActiveTab] = useState<'top' | 'timeline' | 'events'>('top');
+  const [activeTab, setActiveTab] = useState<'top' | 'ranks' | 'timeline' | 'events'>('top');
 
-  // Load divergences + events on mount and switch globe to divergence mode
+  // Load divergences + events + all country states on mount
   useEffect(() => {
+    loadAllCountries();
     loadRecentDivergences(50);
     loadWorldEvents('live', 40);
     loadCountriesTracked('live');
-    setChoroplethMode('divergence');
-    return () => setChoroplethMode('gdp_per_capita'); // reset on unmount
   }, []);
 
   // Latest simulated year, derived from the loaded divergences
@@ -122,122 +121,94 @@ export default function WorldDashboard() {
   ).length;
 
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', background: '#0a0a14', color: '#fff' }}>
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--bg-deep-space)', color: '#fff' }}>
       {/* Left sidebar */}
-      <div style={{
-        width: 360, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.08)',
+      <div className="game-panel" style={{
+        width: 380, flexShrink: 0, borderRadius: 0, borderTop: 0, borderLeft: 0, borderBottom: 0,
         display: 'flex', flexDirection: 'column', overflowY: 'auto',
       }}>
         {/* Header */}
-        <div style={{ padding: '20px 20px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.5 }}>
-              🌍 RealityShift
+        <div style={{ padding: '20px 18px 12px', borderBottom: '2px dashed rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div className="game-font-display" style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent-yellow)', textShadow: '2px 2px 0px #000' }}>
+              🌍 DIVERGENCE DASHBOARD
             </div>
-            <Link to="/" style={{ color: 'var(--text-muted)', fontSize: 12, textDecoration: 'none' }}>
-              ← Play
+            <Link to="/" className="game-button game-button-dark" style={{ padding: '4px 10px', fontSize: 11 }}>
+              ← 3D GLOBE
             </Link>
           </div>
-          <div style={{ color: 'var(--text-faint)', fontSize: 12, marginBottom: 16 }}>
-            Live simulation vs. reality tracker
+          <div style={{ color: 'var(--accent-cyan)', fontSize: 11, fontFamily: 'var(--font-heading)', marginBottom: 12 }}>
+            REAL-WORLD VS SIMULATION DRIFT TRACKER
           </div>
 
-          {/* Subscribing is a peripheral action, but it was the only saturated
-              colour on the page and so won the eye ahead of the simulation
-              state. Demoted to a quiet text link. */}
           <a
             href={`${WORKER_URL}/api/world/feed.xml`}
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              minHeight: 24,
-              fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)',
-              textDecoration: 'none', marginBottom: 12,
-            }}
+            className="game-badge game-badge-magenta"
+            style={{ textDecoration: 'none', padding: '4px 8px' }}
           >
-            ◉ Subscribe via RSS
+            📡 SUBSCRIBE RSS FEED
           </a>
         </div>
 
-        {/* Stats — lead with what the simulation has actually produced. The
-            divergence count is legitimately 0 much of the time, and a headline
-            zero reads as "nothing here" rather than "tracking reality closely". */}
-        <div style={{ padding: '0 16px 8px', display: 'flex', gap: 8 }}>
+        {/* Stats Grid */}
+        <div style={{ padding: '12px 14px 6px', display: 'flex', gap: 8 }}>
           <StatCard
-            label="Sim Year"
+            label="SIM YEAR"
             value={simYear ? String(simYear) : '—'}
-            sub="latest agent cycle"
+            sub="LATEST AGENT CYCLE"
           />
           <StatCard
-            label="Countries"
+            label="COUNTRIES"
             value={countriesTracked !== null ? String(countriesTracked) : '—'}
-            sub="autonomous agents"
+            sub="AUTONOMOUS AGENTS"
           />
         </div>
-        <div style={{ padding: '0 16px 16px', display: 'flex', gap: 8 }}>
+        <div style={{ padding: '0 14px 12px', display: 'flex', gap: 8 }}>
           <StatCard
-            label="World Events"
+            label="EVENTS"
             value={String(worldEvents.length)}
-            sub="agent interactions"
+            sub="INTER-AGENT EVENTS"
           />
           <StatCard
-            label="Diverged"
+            label="DIVERGED"
             value={String(divergedCount)}
-            sub={`of ${recentDivergences.length} checked`}
+            sub={`OF ${recentDivergences.length} CHECKED`}
           />
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, padding: '0 16px 12px' }}>
-          {(['top', 'timeline', 'events'] as const).map(tab => (
+        <div style={{ display: 'flex', gap: 6, padding: '0 14px 12px' }}>
+          {(['top', 'ranks', 'timeline', 'events'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1, padding: '6px 0', borderRadius: 6, border: 'none',
-                background: activeTab === tab ? 'rgba(255,255,255,0.1)' : 'transparent',
-                color: activeTab === tab ? '#fff' : 'var(--text-muted)',
-                cursor: 'pointer', fontSize: 12, fontWeight: 600,
-              }}
+              className={`game-button ${activeTab === tab ? 'game-button-cyan' : 'game-button-dark'}`}
+              style={{ flex: 1, height: 32, fontSize: 11, padding: 0 }}
             >
-              {tab === 'top' ? 'Top' : tab === 'timeline' ? 'Timeline' : 'Events'}
+              {tab === 'top' ? '🔥 TOP' : tab === 'ranks' ? '📊 RANKS' : tab === 'timeline' ? '⏳ TIMELINE' : '🌐 EVENTS'}
             </button>
           ))}
         </div>
 
         {/* Tab content */}
-        <div style={{ flex: 1, padding: '0 16px 16px', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: '0 14px 14px', overflowY: 'auto' }}>
           {activeTab === 'top'
             ? <TopDivergences divs={recentDivergences} />
-            : activeTab === 'timeline'
-              ? <DivergenceTimeline divs={recentDivergences} />
-              : <WorldEventsFeed events={worldEvents} />}
+            : activeTab === 'ranks'
+              ? <CountryLeaderboard />
+              : activeTab === 'timeline'
+                ? <DivergenceTimeline divs={recentDivergences} />
+                : <WorldEventsFeed events={worldEvents} />}
         </div>
       </div>
 
-      {/* Globe */}
-      <div style={{ flex: 1, position: 'relative' }}>
-        <Globe />
+      {/* Main Stats Table View */}
+      <div style={{ flex: 1, position: 'relative', display: 'flex', overflow: 'hidden' }}>
+        <CountryTable />
         {selectedCountry && !selectedRegion && <CountryPanel />}
         {selectedRegion && <RegionPanel />}
-
-        {/* Mode label — held back until the globe has geometry, so it does not
-            instruct the visitor to click an empty canvas while it loads. */}
-        {globeReady && (
-          <div style={{
-            position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-            background: 'var(--surface-floating)',
-            backdropFilter: 'var(--surface-floating-blur)',
-            border: 'var(--border-subtle)',
-            borderRadius: 'var(--radius-panel)',
-            padding: '6px 14px',
-            fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)',
-            pointerEvents: 'none',
-          }}>
-            Overlay: {choroplethMode.replace(/_/g, ' ')} · Click a country to inspect
-          </div>
-        )}
       </div>
     </div>
   );

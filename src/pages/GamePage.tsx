@@ -14,16 +14,16 @@ function SimulateLog({ log }: { log: { country: string; status: string; error?: 
   if (!log.length) return null;
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-        Last Simulation
+      <div className="game-badge game-badge-yellow" style={{ marginBottom: 8, display: 'inline-flex' }}>
+        SIMULATION LOG
       </div>
       {log.map((r, i) => (
-        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, marginBottom: 4 }}>
-          <span style={{ color: r.status === 'ok' ? '#34d399' : '#f87171' }}>
+        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, marginBottom: 4, fontFamily: 'var(--font-heading)' }}>
+          <span style={{ color: r.status === 'ok' ? 'var(--accent-green)' : 'var(--accent-magenta)', fontWeight: 800 }}>
             {r.status === 'ok' ? '✓' : '✗'}
           </span>
-          <span style={{ color: r.status === 'ok' ? '#d1d5db' : '#f87171' }}>{r.country}</span>
-          {r.error && <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.error.slice(0, 40)}</span>}
+          <span style={{ color: r.status === 'ok' ? '#fff' : 'var(--accent-magenta)', fontWeight: 700 }}>{r.country}</span>
+          {r.error && <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{r.error.slice(0, 40)}</span>}
         </div>
       ))}
     </div>
@@ -60,10 +60,10 @@ export default function GamePage() {
 
   if (!activeFork) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a14', color: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-deep-space)', color: '#fff' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🌍</div>
-          <div>Loading your parallel universe…</div>
+          <div style={{ fontSize: 48, marginBottom: 12, filter: 'drop-shadow(0 0 10px rgba(0,240,255,0.5))' }}>🌍</div>
+          <div className="game-font-heading" style={{ fontSize: 20, color: 'var(--accent-yellow)' }}>LOADING PARALLEL UNIVERSE…</div>
         </div>
       </div>
     );
@@ -72,50 +72,46 @@ export default function GamePage() {
   const playerData = countryData[activeFork.countryCode];
 
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', background: '#0a0a14', color: '#fff' }}>
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--bg-deep-space)', color: '#fff' }}>
       {/* Left sidebar */}
-      <div style={{
-        width: 320, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.08)',
+      <div className="game-panel" style={{
+        width: 340, flexShrink: 0, borderRadius: 0, borderTop: 0, borderLeft: 0, borderBottom: 0,
         display: 'flex', flexDirection: 'column', overflowY: 'auto',
       }}>
 
         {/* Header */}
-        <div style={{ padding: '16px 16px 0' }}>
+        <div style={{ padding: '18px 16px 12px', borderBottom: '2px dashed rgba(255,255,255,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Link
               to="/"
               onClick={() => exitFork()}
-              style={{ color: 'var(--text-muted)', fontSize: 12, textDecoration: 'none' }}
+              className="game-button game-button-dark"
+              style={{ padding: '4px 10px', fontSize: 11 }}
             >
-              ← Exit Game
+              ← EXIT GAME
             </Link>
-            <span style={{
-              fontSize: 10, color: '#a78bfa',
-              background: 'rgba(167,139,250,0.1)',
-              padding: '3px 8px', borderRadius: 4,
-            }}>
-              PARALLEL UNIVERSE
+            <span className="game-badge game-badge-magenta">
+              PARALLEL FORK
             </span>
           </div>
 
-          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>
-            Playing as {activeFork.countryCode}
+          <div className="game-font-heading" style={{ fontSize: 20, color: 'var(--accent-yellow)', marginBottom: 2 }}>
+            COMMANDING {activeFork.countryCode}
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 16 }}>
-            Simulated Year <strong style={{ color: '#fff' }}>{activeFork.year}</strong>
-            &nbsp;·&nbsp;No real-world data injected
+          <div style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-heading)' }}>
+            SIMULATED YEAR <strong style={{ color: '#fff' }}>{activeFork.year}</strong> &nbsp;·&nbsp; NO REAL-WORLD DATA INJECTED
           </div>
         </div>
 
         {/* Policy editor */}
-        <div style={{ padding: '0 16px', flex: 1 }}>
+        <div style={{ padding: '14px 16px', flex: 1 }}>
           {playerData ? (
             <PolicyEditor
               baseIndicators={playerData.indicators}
               basePolicies={playerData.policies ?? {}}
             />
           ) : (
-            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading country data…</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: 20 }}>Loading country data…</div>
           )}
 
           {/* Save Changes button — pulses the player's country on the globe */}
@@ -125,37 +121,32 @@ export default function GamePage() {
               setPulseCountry(activeFork.countryCode);
             }}
             disabled={isSimulating}
+            className="game-button game-button-dark"
             style={{
-              width: '100%', padding: '9px 0', borderRadius: 8, border: 'none',
-              background: 'rgba(255,255,255,0.07)',
-              color: '#d1d5db', fontSize: 13, fontWeight: 600,
-              cursor: isSimulating ? 'default' : 'pointer',
-              marginTop: 4, marginBottom: 2,
+              width: '100%', padding: '10px 0', fontSize: 12, marginTop: 12,
             }}
           >
-            💾 Save Changes
+            💾 SAVE POLICY DRAFT
           </button>
         </div>
 
         {/* Simulate button */}
-        <div style={{ padding: '12px 16px 20px' }}>
+        <div style={{ padding: '12px 16px 20px', borderTop: '2px solid rgba(255,255,255,0.1)' }}>
           <button
             onClick={() => session && simulateYear(session.access_token)}
             disabled={isSimulating || !session}
+            className="game-button game-button-cyan"
             style={{
-              width: '100%', padding: '12px 0', borderRadius: 8, border: 'none',
-              background: isSimulating ? 'rgba(255,255,255,0.08)' : 'rgba(99,102,241,0.85)',
-              color: '#fff', fontSize: 14, fontWeight: 700,
-              cursor: isSimulating ? 'default' : 'pointer',
-              transition: 'background 0.2s',
+              width: '100%', padding: '14px 0', fontSize: 14,
+              boxShadow: 'var(--hud-shadow), var(--hud-shadow-glow-cyan)',
             }}
           >
-            {isSimulating ? '⏳ Simulating world…' : '▶ Simulate Year →'}
+            {isSimulating ? '⏳ SIMULATING WORLD…' : '▶ SIMULATE YEAR →'}
           </button>
 
           {isSimulating && (
-            <div style={{ color: 'var(--text-muted)', fontSize: 11, textAlign: 'center', marginTop: 6 }}>
-              Running AI agents for neighboring countries…
+            <div style={{ color: 'var(--accent-yellow)', fontSize: 11, textAlign: 'center', marginTop: 8, fontFamily: 'var(--font-heading)' }}>
+              ⚡ RUNNING AI AGENTS FOR NEIGHBORING NATIONS…
             </div>
           )}
 
@@ -164,10 +155,10 @@ export default function GamePage() {
           {/* World events in this fork */}
           {worldEvents.length > 0 && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-                World Events
+              <div className="game-badge game-badge-yellow" style={{ marginBottom: 8, display: 'inline-flex' }}>
+                FORK WORLD EVENTS
               </div>
-              <WorldEventsFeed events={worldEvents} maxHeight={240} />
+              <WorldEventsFeed events={worldEvents} maxHeight={220} />
             </div>
           )}
         </div>
@@ -180,13 +171,21 @@ export default function GamePage() {
         {selectedRegion && <RegionPanel />}
 
         {/* Fork banner */}
-        <div style={{
-          position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,0.7)', borderRadius: 8,
-          padding: '6px 14px', fontSize: 12, color: '#9ca3af',
-          pointerEvents: 'none',
-        }}>
-          🌐 Fork Universe · Year {activeFork.year} · Click a country to inspect
+        <div
+          className="game-badge"
+          style={{
+            position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--bg-hud-panel)',
+            border: '2px solid var(--game-border-ink)',
+            outline: '1px solid var(--accent-cyan)',
+            borderRadius: 'var(--radius-game-pill)',
+            padding: '6px 18px', fontSize: 12, color: '#fff',
+            pointerEvents: 'none',
+            boxShadow: 'var(--hud-shadow), var(--hud-shadow-glow-cyan)',
+            zIndex: 30,
+          }}
+        >
+          🌐 PARALLEL UNIVERSE · YEAR {activeFork.year} · CLICK A NATION TO COMMAND
         </div>
       </div>
     </div>

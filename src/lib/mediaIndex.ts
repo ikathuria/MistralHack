@@ -1,8 +1,4 @@
-// Typed reader for the per-fork media index the media layer writes to B2.
-//
-// The index lives at ${VITE_B2_PUBLIC_BASE}/index/{world_id}/media.json and is
-// the sole source for the front-page wall — assets stream straight from B2 with
-// no Worker or Supabase round-trip. Shape mirrors media/realityshift_media/index.py.
+import { DEMO_2026_MEDIA_ENTRIES } from '../data/demoSamples';
 
 export interface SimProvenance {
   fork_id: string;
@@ -52,18 +48,30 @@ export function mediaIndexUrl(worldId: string): string {
   return `${base}/index/${worldId}/media.json`;
 }
 
-/**
- * Fetch a world's media index. Returns null (not throwing) when no index exists
- * yet — a fork with no generated media is a normal empty state, not an error.
- */
 export async function fetchMediaIndex(worldId: string): Promise<MediaIndex | null> {
+  if (worldId === 'live' || !MEDIA_INDEX_URL) {
+    return {
+      world_id: worldId,
+      count: DEMO_2026_MEDIA_ENTRIES.length,
+      media: DEMO_2026_MEDIA_ENTRIES,
+    };
+  }
+
   try {
     const res = await fetch(mediaIndexUrl(worldId), { cache: 'no-cache' });
-    if (!res.ok) return null;
-    const data = (await res.json()) as MediaIndex;
-    if (!data || !Array.isArray(data.media)) return null;
-    return data;
+    if (res.ok) {
+      const data = (await res.json()) as MediaIndex;
+      if (data && Array.isArray(data.media) && data.media.length > 0) {
+        return data;
+      }
+    }
   } catch {
-    return null;
+    // Fall back to 2026 demo samples
   }
+
+  return {
+    world_id: worldId,
+    count: DEMO_2026_MEDIA_ENTRIES.length,
+    media: DEMO_2026_MEDIA_ENTRIES,
+  };
 }

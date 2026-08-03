@@ -28,30 +28,50 @@ export default function AppHeader() {
       style={{
         position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30,
         display: 'flex', alignItems: 'center', gap: 16,
-        padding: '10px 16px',
-        background: 'linear-gradient(to bottom, rgba(6,6,12,0.92), rgba(6,6,12,0))',
+        padding: '14px 20px',
+        background: 'linear-gradient(to bottom, rgba(7,9,19,0.95), rgba(7,9,19,0))',
         pointerEvents: 'none',
       }}
     >
-      <div style={{ pointerEvents: 'auto' }}>
-        <div style={{
-          fontSize: 'var(--font-size-lg)', fontWeight: 800, letterSpacing: -0.4,
-          lineHeight: 1.1,
-        }}>
-          🌍 RealityShift
-        </div>
-        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>
-          AI agents run every country · pick one to take over
-        </div>
+      <div style={{ pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            fontSize: 26,
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+          }}>
+            🌍
+          </div>
+          <div>
+            <div className="game-font-display" style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: 'var(--accent-yellow)',
+              textShadow: '2px 2px 0px #0b0f19, 0 0 10px rgba(255,230,0,0.4)',
+              lineHeight: 1.0,
+            }}>
+              REALITY SHIFT
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--accent-cyan)',
+              letterSpacing: 0.8,
+              marginTop: 2,
+              textTransform: 'uppercase',
+            }}>
+              MULTI-AGENT WARGAME SIMULATOR
+            </div>
+          </div>
+        </Link>
       </div>
 
-      {/* Where and when the visitor is. The globe is lit by the real sun
-          position, so this explains why their own country is in daylight or
-          darkness rather than leaving it looking like a rendering fault. */}
-      <div style={{
-        pointerEvents: 'auto', display: 'flex', alignItems: 'center', gap: 6,
-        fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)',
-        paddingLeft: 4,
+      {/* Visitor Location & Sun Clock Badge */}
+      <div className="game-badge" style={{
+        pointerEvents: 'auto',
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '4px 10px',
+        marginLeft: 8,
       }}>
         <span aria-hidden>{visitor.isDay ? '☀️' : '🌙'}</span>
         <span>
@@ -59,30 +79,21 @@ export default function AppHeader() {
         </span>
       </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12, pointerEvents: 'auto' }}>
         <CountrySearch />
         <Link
           to="/wall"
-          style={{
-            display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',
-            fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)',
-            textDecoration: 'none', whiteSpace: 'nowrap',
-          }}
+          className="game-button game-button-dark"
+          style={{ height: 36, padding: '0 14px', fontSize: 12 }}
         >
-          🗞️ Front pages
+          🗞️ FRONT PAGES
         </Link>
         <Link
           to="/world"
-          style={{
-            display: 'inline-flex', alignItems: 'center', height: 32, padding: '0 12px',
-            fontSize: 'var(--font-size-sm)', fontWeight: 600,
-            color: 'var(--accent-text)', textDecoration: 'none',
-            background: 'rgba(99,102,241,0.16)',
-            border: '1px solid rgba(99,102,241,0.42)',
-            borderRadius: 8, whiteSpace: 'nowrap',
-          }}
+          className="game-button game-button-cyan"
+          style={{ height: 36, padding: '0 16px', fontSize: 12 }}
         >
-          Divergence dashboard →
+          📊 DASHBOARD →
         </Link>
       </div>
     </header>

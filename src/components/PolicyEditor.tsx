@@ -35,16 +35,24 @@ function Slider({ cfg, base, value, onChange }: {
 }) {
   const delta = value - base;
   const deltaStr = delta === 0 ? '' : (delta > 0 ? `+${delta.toFixed(cfg.step < 1 ? 1 : 0)}` : delta.toFixed(cfg.step < 1 ? 1 : 0));
-  const deltaColor = delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : 'var(--text-muted)';
+  const deltaColor = delta > 0 ? 'var(--accent-green)' : delta < 0 ? 'var(--accent-magenta)' : 'var(--text-muted)';
 
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>{cfg.label}</span>
-        <span style={{ fontSize: 12 }}>
-          <span style={{ fontWeight: 600 }}>{value.toFixed(cfg.step < 1 ? 1 : 0)}</span>
-          <span style={{ color: 'var(--text-muted)' }}> {cfg.unit}</span>
-          {deltaStr && <span style={{ marginLeft: 6, color: deltaColor, fontSize: 11 }}>{deltaStr}</span>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>{cfg.label}</span>
+        <span style={{ fontFamily: 'var(--font-heading)', fontSize: 12 }}>
+          <span style={{ fontWeight: 800, color: 'var(--accent-yellow)' }}>{value.toFixed(cfg.step < 1 ? 1 : 0)}</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 10 }}> {cfg.unit}</span>
+          {deltaStr && (
+            <span style={{
+              marginLeft: 6, color: deltaColor, fontSize: 10, fontWeight: 800,
+              background: 'rgba(0,0,0,0.4)', padding: '1px 5px', borderRadius: 4,
+              border: `1px solid ${deltaColor}`,
+            }}>
+              {deltaStr}
+            </span>
+          )}
         </span>
       </div>
       <input
@@ -54,7 +62,13 @@ function Slider({ cfg, base, value, onChange }: {
         step={cfg.step}
         value={value}
         onChange={e => onChange(parseFloat(e.target.value))}
-        style={{ width: '100%', accentColor: '#6366f1' }}
+        style={{
+          width: '100%',
+          accentColor: 'var(--accent-cyan)',
+          cursor: 'pointer',
+          height: 6,
+          borderRadius: 3,
+        }}
       />
     </div>
   );
@@ -73,8 +87,8 @@ export default function PolicyEditor({ baseIndicators, basePolicies }: Props) {
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-        Indicators
+      <div className="game-badge game-badge-yellow" style={{ marginBottom: 12, display: 'inline-flex' }}>
+        📊 BUDGET INDICATORS
       </div>
 
       {INDICATOR_SLIDERS.map(cfg => (
@@ -87,8 +101,8 @@ export default function PolicyEditor({ baseIndicators, basePolicies }: Props) {
         />
       ))}
 
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, marginTop: 16 }}>
-        Policies
+      <div className="game-badge game-badge-magenta" style={{ marginBottom: 12, marginTop: 16, display: 'inline-flex' }}>
+        🏛️ STATE POLICIES
       </div>
 
       {POLICY_SLIDERS.map(cfg => (

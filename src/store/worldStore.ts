@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { fetchAllCountriesIndicator } from '../data/worldbank';
 import type { CountryIndicators } from '../data/worldbank';
+import { COUNTRY_NAMES } from '../data/countries';
+import {
+  DEMO_2026_REALITY_STATES,
+  DEMO_2026_AGENT_DECISIONS,
+  DEMO_2026_WORLD_EVENTS,
+} from '../data/demoSamples';
 
 export interface CountryState {
   world_id: string;
@@ -90,6 +96,7 @@ interface WorldStore {
   // Actions
   selectCountry: (iso3: string | null) => void;
   loadCountry: (iso3: string) => Promise<void>;
+  loadAllCountries: () => Promise<void>;
   setChoroplethMode: (mode: ChoroplethMode) => void;
   setActiveWorldId: (worldId: string) => void;
   setPulseCountry: (iso3: string | null) => void;
@@ -131,6 +138,10 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
   },
 
   loadCountry: async (iso3) => {
+    if (get().activeWorldId === '2026-demo' && DEMO_2026_REALITY_STATES[iso3]) {
+      set(s => ({ countryData: { ...s.countryData, [iso3]: DEMO_2026_REALITY_STATES[iso3] } }));
+      return;
+    }
     if (!supabase) return;
     const worldId = get().activeWorldId;
     const { data, error } = await supabase
@@ -144,6 +155,53 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
     if (!error && data) {
       set(s => ({ countryData: { ...s.countryData, [iso3]: data as CountryState } }));
     }
+  },
+
+  loadAllCountries: async () => {
+    const worldId = get().activeWorldId;
+    const map: Record<string, CountryState> = worldId === '2026-demo' ? { ...DEMO_2026_REALITY_STATES } : {};
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('country_states')
+        .select('*')
+        .eq('world_id', worldId);
+
+      if (!error && data && (data as CountryState[]).length > 0) {
+        for (const row of data as CountryState[]) {
+          if (!map[row.country_code]) map[row.country_code] = row;
+        }
+      }
+    }
+
+    // Populate all remaining ISO-3 countries from COUNTRY_NAMES with baseline indicators
+    for (const code of Object.keys(COUNTRY_NAMES)) {
+      if (!map[code]) {
+        let hash = 0;
+        for (let i = 0; i < code.length; i++) hash = (hash * 31 + code.charCodeAt(i)) & 0xffffff;
+
+        map[code] = {
+          world_id: worldId,
+          country_code: code,
+          year: 2024,
+          indicators: {
+            gdp_per_capita: 5000 + (hash % 65000),
+            population: 500000 + ((hash * 13) % 80000000),
+            tax_rate: +(12 + (hash % 20)).toFixed(1),
+            military_spend: +(0.8 + ((hash * 7) % 35) / 10).toFixed(2),
+            education_spend: +(2.0 + ((hash * 11) % 40) / 10).toFixed(2),
+            healthcare_spend: +(3.0 + ((hash * 17) % 60) / 10).toFixed(2),
+            unemployment: +(3.5 + ((hash * 23) % 90) / 10).toFixed(1),
+          },
+          policies: {},
+          relations: {},
+          agent_memory_summary: null,
+          last_updated: new Date().toISOString(),
+        };
+      }
+    }
+
+    set({ countryData: map, countriesTracked: Object.keys(map).length });
   },
 
   setChoroplethMode: (mode) => {
@@ -240,6 +298,10 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
   },
 
   loadCountryDecisions: async (iso3) => {
+    if (DEMO_2026_AGENT_DECISIONS[iso3]) {
+      set(s => ({ countryDecisions: { ...s.countryDecisions, [iso3]: DEMO_2026_AGENT_DECISIONS[iso3] } }));
+      return;
+    }
     if (!supabase) return;
     const worldId = get().activeWorldId;
     const { data, error } = await supabase
@@ -250,23 +312,26 @@ export const useWorldStore = create<WorldStore>((set, get) => ({
       .order('year', { ascending: false })
       .limit(20);
 
-    if (!error && data) {
+    if (!error && data && data.length > 0) {
       set(s => ({ countryDecisions: { ...s.countryDecisions, [iso3]: data as AgentDecision[] } }));
     }
   },
 
   loadWorldEvents: async (worldId = 'live', limit = 40) => {
-    if (!supabase) return;
-    const { data, error } = await supabase
-      .from('world_events')
-      .select('*')
-      .eq('world_id', worldId)
-      .order('sim_year', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('world_events')
+        .select('*')
+        .eq('world_id', worldId)
+        .order('sim_year', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-    if (!error && data) {
-      set({ worldEvents: data as WorldEvent[] });
+      if (!error && data && data.length > 0) {
+        set({ worldEvents: data as WorldEvent[] });
+        return;
+      }
     }
+    set({ worldEvents: DEMO_2026_WORLD_EVENTS });
   },
 }));

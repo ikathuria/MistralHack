@@ -20,7 +20,7 @@ import {
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { useWorldStore } from '../store/worldStore';
-import type { ChoroplethMode, WorldEvent } from '../store/worldStore';
+import type { WorldEvent } from '../store/worldStore';
 import { useRegionStore, SUPPORTED_DRILL_COUNTRIES } from '../store/regionStore';
 import { NUMERIC_TO_ISO3, countryName, COUNTRY_CENTROIDS as CENTROIDS } from '../data/countries';
 import type { FeatureCollection, Feature } from 'geojson';
@@ -32,13 +32,13 @@ if (cesiumToken) Ion.defaultAccessToken = cesiumToken;
 
 // Event arc colors by type
 const ARC_COLORS: Record<string, Color> = {
-  sanction:           Color.RED.withAlpha(0.85),
-  trade_deal:         Color.GOLD.withAlpha(0.85),
-  military_posture:   Color.ORANGE.withAlpha(0.85),
-  diplomatic_protest: Color.YELLOW.withAlpha(0.85),
-  alliance_formed:    Color.CYAN.withAlpha(0.85),
-  alliance_broken:    Color.HOTPINK.withAlpha(0.85),
-  conflict_risk:      Color.RED.withAlpha(0.95),
+  sanction:           Color.fromCssColorString('#FF2E93').withAlpha(0.9), // Laser Magenta
+  trade_deal:         Color.fromCssColorString('#00F0FF').withAlpha(0.9), // Cyber Cyan
+  military_posture:   Color.fromCssColorString('#9D00FF').withAlpha(0.9), // Electric Violet
+  diplomatic_protest: Color.fromCssColorString('#FFB800').withAlpha(0.85),
+  alliance_formed:    Color.fromCssColorString('#00F0FF').withAlpha(0.9), // Cyber Cyan
+  alliance_broken:    Color.fromCssColorString('#FF2E93').withAlpha(0.9), // Laser Magenta
+  conflict_risk:      Color.fromCssColorString('#FF0055').withAlpha(0.95),
 };
 
 // ─── ISO 3166-1 numeric → alpha-3 lookup ─────────────────────────────────────
@@ -130,60 +130,67 @@ function drawArc(viewer: Viewer, event: WorldEvent, durationMs = 4000): void {
   }, durationMs);
 }
 
-// ─── Choropleth helpers ───────────────────────────────────────────────────────
-function choroplethColor(value: number | undefined, min: number, max: number): Color {
-  // Fully transparent rather than dark grey: with no overlay selected the
-  // illustrated Earth beneath should be visible, not covered by 200 grey plates.
-  if (value === undefined) return Color.TRANSPARENT;
-  if (max === min) return Color.fromCssColorString('#0f172a').withAlpha(0.85);
-  // Log scale so mid-range countries get distinct colors (linear scale clusters everything near green)
-  const logMin = Math.log1p(min);
-  const logMax = Math.log1p(max);
-  const t = Math.max(0, Math.min(1, (Math.log1p(value) - logMin) / (logMax - logMin)));
-  return Color.fromHsl((1 - t) * 0.33, 0.80, 0.45, 0.92);
+function choroplethColor(): Color {
+  // Always transparent so the rich 3D cartoon globe imagery is 100% clean, crisp, and unobstructed
+  return Color.TRANSPARENT;
 }
 
 // ─── Tooltip overlay ─────────────────────────────────────────────────────────
 interface TooltipState { iso3: string; x: number; y: number }
 
-function Tooltip({ tip, mode, values }: {
-  tip: TooltipState;
-  mode: ChoroplethMode;
-  values: Map<string, number>;
-}) {
+function Tooltip({ tip }: { tip: TooltipState }) {
   const name = countryName(tip.iso3);
-  const val  = values.get(tip.iso3);
-  const modeLabel = CHOROPLETH_LABELS[mode];
-  const valStr = val !== undefined
-    ? mode === 'gdp_per_capita'
-      ? `$${Math.round(val).toLocaleString()}`
-      : `${val.toFixed(1)}%`
-    : '—';
 
   return (
     <div style={{
       position:     'absolute',
-      left:         tip.x + 14,
-      top:          tip.y - 10,
+      left:         tip.x + 16,
+      top:          tip.y - 12,
       pointerEvents:'none',
-      background:   'var(--surface-floating)',
-      backdropFilter: 'var(--surface-floating-blur)',
-      border:       'var(--border-strong)',
-      borderRadius: 'var(--radius-panel)',
-      padding:      '8px 12px',
+      background:   'var(--bg-hud-panel)',
+      backdropFilter: 'blur(12px)',
+      border:       '3px solid var(--game-border-ink)',
+      outline:      '1px solid var(--accent-cyan)',
+      borderRadius: 'var(--radius-game-md)',
+      padding:      '10px 14px',
       color:        '#fff',
       fontSize:     12,
-      zIndex:       20,
-      maxWidth:     200,
-      boxShadow:    'var(--shadow-floating)',
+      zIndex:       40,
+      minWidth:     160,
+      boxShadow:    'var(--hud-shadow-lg), var(--hud-shadow-glow-cyan)',
     }}>
-      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{name}</div>
-      <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 4 }}>{tip.iso3}</div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ color: '#9ca3af' }}>{modeLabel.split(' (')[0]}</span>
-        <span style={{ fontWeight: 600 }}>{valStr}</span>
+      <div style={{
+        fontFamily: 'var(--font-heading)',
+        fontWeight: 800,
+        fontSize: 15,
+        color: 'var(--accent-yellow)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+      }}>
+        <span>{name}</span>
+        <span style={{
+          fontSize: 10,
+          background: '#1a233b',
+          border: '1.5px solid var(--accent-cyan)',
+          color: 'var(--accent-cyan)',
+          padding: '1px 5px',
+          borderRadius: 4,
+        }}>
+          {tip.iso3}
+        </span>
       </div>
-      <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 5 }}>Click to explore →</div>
+      <div style={{
+        fontFamily: 'var(--font-heading)',
+        color: 'var(--accent-cyan)',
+        fontSize: 10,
+        marginTop: 6,
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
+      }}>
+        ⚡ Click to inspect →
+      </div>
     </div>
   );
 }
@@ -196,15 +203,20 @@ function DrillBadge({ country }: { country: string }) {
       bottom:        32,
       left:          '50%',
       transform:     'translateX(-50%)',
-      background:    'rgba(99,102,241,0.15)',
-      border:        '1px solid rgba(167,139,250,0.4)',
-      borderRadius:  8,
-      padding:       '5px 12px',
-      fontSize:      11,
-      color:         '#a78bfa',
+      background:    'linear-gradient(90deg, #15092b, #09122b)',
+      border:        '3px solid var(--game-border-ink)',
+      outline:       '1px solid var(--accent-yellow)',
+      borderRadius:  'var(--radius-game-pill)',
+      padding:       '6px 18px',
+      fontSize:      12,
+      fontFamily:    'var(--font-heading)',
+      fontWeight:    800,
+      color:         'var(--accent-yellow)',
       pointerEvents: 'none',
+      boxShadow:     'var(--hud-shadow), var(--hud-shadow-glow-yellow)',
+      zIndex:        30,
     }}>
-      🔍 Region view — {countryName(country)} · Click a region to inspect
+      🔍 REGION VIEW — {countryName(country).toUpperCase()} · CLICK A REGION TO COMMAND
     </div>
   );
 }
@@ -221,7 +233,7 @@ export default function Globe() {
   const drillCountryRef = useRef<string | null>(null);
 
   const {
-    choroplethValues, choroplethMode, loadChoropleth,
+    choroplethValues, loadChoropleth,
     selectedCountry, worldEvents, pulseCountry, setPulseCountry, setGlobeReady,
   } = useWorldStore();
 
@@ -244,18 +256,12 @@ export default function Globe() {
   const applyColors = useCallback(() => {
     const source = sourceRef.current;
     if (!source) return;
-    const vals = Array.from(choroplethValues.values());
-    const min  = Math.min(...vals);
-    const max  = Math.max(...vals);
     for (const entity of source.entities.values) {
-      const iso3 = entityIso3Map.get(entity.id);
-      const val  = iso3 ? choroplethValues.get(iso3) : undefined;
-      const col  = choroplethColor(val, min, max);
       if (entity.polygon) {
-        entity.polygon.material = new ColorMaterialProperty(col);
+        entity.polygon.material = new ColorMaterialProperty(choroplethColor());
       }
     }
-  }, [choroplethValues]);
+  }, []);
 
   useEffect(() => { loadChoropleth(); }, []);
   useEffect(() => { applyColors(); }, [choroplethValues]);
@@ -285,20 +291,15 @@ export default function Globe() {
   useEffect(() => {
     if (!pulseCountry || !sourceRef.current) return;
     const source = sourceRef.current;
-    const vals   = Array.from(choroplethValues.values());
-    const min    = Math.min(...vals);
-    const max    = Math.max(...vals);
 
     for (const entity of source.entities.values) {
       const iso3 = entityIso3Map.get(entity.id);
       if (iso3 !== pulseCountry || !entity.polygon) continue;
       // Imperative Cesium scene write: flash the polygon white, then restore its
-      // choropleth color after 550ms. The entity is captured into setTimeout, so
-      // the immutability rule sees it escape-then-mutate — but mutating the live
-      // Cesium scene through the ref is exactly what this ref exists for.
+      // transparent color after 550ms.
       // eslint-disable-next-line react-hooks/immutability
       entity.polygon.material = new ColorMaterialProperty(Color.WHITE.withAlpha(0.95));
-      const restoreColor = choroplethColor(choroplethValues.get(iso3), min, max);
+      const restoreColor = choroplethColor();
       setTimeout(() => {
         if (entity.polygon) {
           entity.polygon.material = new ColorMaterialProperty(restoreColor);
@@ -420,7 +421,7 @@ export default function Globe() {
     // ISO_A3 is added via numeric lookup so choropleth/click code stays unchanged.
     GeoJsonDataSource.load(
       'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
-      { stroke: Color.WHITE.withAlpha(0.2), fill: Color.fromCssColorString('#1e293b').withAlpha(0.75), strokeWidth: 0.5 }
+      { stroke: Color.WHITE.withAlpha(0.25), fill: Color.TRANSPARENT, strokeWidth: 0.5 }
     ).then(source => {
       if (viewerRef.current?.isDestroyed()) return;
       entityIso3Map.clear();
@@ -549,11 +550,8 @@ export default function Globe() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#000' }} />
-      {globeStatus !== 'loading' && <ChoroplethLegend mode={choroplethMode} />}
       {globeStatus !== 'ready' && <GlobeStatus status={globeStatus} />}
-      {tooltip && (
-        <Tooltip tip={tooltip} mode={choroplethMode} values={choroplethValues} />
-      )}
+      {tooltip && <Tooltip tip={tooltip} />}
       {drillCountry && <DrillBadge country={drillCountry} />}
     </div>
   );
@@ -595,61 +593,4 @@ function GlobeStatus({ status }: { status: 'loading' | 'error' }) {
   );
 }
 
-// ─── Choropleth legend ────────────────────────────────────────────────────────
-const CHOROPLETH_LABELS: Record<ChoroplethMode, string> = {
-  none:             'None — show the Earth',
-  gdp_per_capita:   'GDP per Capita (USD)',
-  military_spend:   'Military Spend (% GDP)',
-  unemployment:     'Unemployment (%)',
-  education_spend:  'Education Spend (% GDP)',
-  healthcare_spend: 'Healthcare Spend (% GDP)',
-  divergence:       'Divergence from Reality',
-};
 
-function ChoroplethLegend({ mode }: { mode: ChoroplethMode }) {
-  const { setChoroplethMode } = useWorldStore();
-  return (
-    <div style={{
-      position:        'absolute',
-      bottom:          32,
-      left:            16,
-      background:      'var(--surface-floating)',
-      backdropFilter:  'var(--surface-floating-blur)',
-      borderRadius:    'var(--radius-panel)',
-      padding:         '12px 16px',
-      color:           '#fff',
-      fontSize:        12,
-      display:         'flex',
-      flexDirection:   'column',
-      gap:             7,
-      minWidth:        195,
-      border:          'var(--border-subtle)',
-      boxShadow:       'var(--shadow-floating)',
-    }}>
-      <div style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#9ca3af' }}>
-        Overlay
-      </div>
-      {(Object.keys(CHOROPLETH_LABELS) as ChoroplethMode[]).map(m => (
-        // minHeight 24 meets the WCAG 2.5.8 minimum target size; the bare 13px
-        // radio was well under it. The label is the hit area, so sizing it is enough.
-        <label key={m} style={{ cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center', minHeight: 24 }}>
-          <input
-            type="radio"
-            name="choropleth-overlay"
-            checked={mode === m}
-            onChange={() => setChoroplethMode(m)}
-            style={{ accentColor: '#6366f1', width: 16, height: 16, margin: 0, flexShrink: 0 }}
-          />
-          <span style={{ color: mode === m ? '#fff' : '#9ca3af' }}>{CHOROPLETH_LABELS[m]}</span>
-        </label>
-      ))}
-      <div style={{ marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: 'var(--text-muted)' }}>
-        <span style={{ background: 'hsl(120,80%,45%)', width: 12, height: 12, borderRadius: 2, display: 'inline-block', flexShrink: 0 }} />
-        Low
-        <span style={{ flex: 1, height: 4, background: 'linear-gradient(to right,hsl(120,80%,45%),hsl(60,80%,45%),hsl(0,80%,45%))', borderRadius: 2 }} />
-        High
-        <span style={{ background: 'hsl(0,80%,45%)', width: 12, height: 12, borderRadius: 2, display: 'inline-block', flexShrink: 0 }} />
-      </div>
-    </div>
-  );
-}

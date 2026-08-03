@@ -1,48 +1,56 @@
 import type { WorldEvent } from '../store/worldStore';
 
 const EVENT_META: Record<string, { icon: string; color: string; label: string }> = {
-  sanction:            { icon: '🚫', color: '#f87171', label: 'Sanction'        },
-  trade_deal:          { icon: '🤝', color: '#34d399', label: 'Trade Deal'      },
-  military_posture:    { icon: '⚔️',  color: '#fbbf24', label: 'Military'       },
-  diplomatic_protest:  { icon: '📣', color: '#fb923c', label: 'Protest'         },
-  alliance_formed:     { icon: '🔗', color: '#a78bfa', label: 'Alliance'        },
-  alliance_broken:     { icon: '💔', color: '#f87171', label: 'Alliance Broken' },
-  conflict_risk:       { icon: '🔴', color: '#ef4444', label: 'Conflict Risk'   },
+  sanction:            { icon: '🚫', color: 'var(--accent-magenta)', label: 'SANCTION'        },
+  trade_deal:          { icon: '🤝', color: 'var(--accent-green)', label: 'TRADE DEAL'      },
+  military_posture:    { icon: '⚔️',  color: 'var(--accent-yellow)', label: 'MILITARY'       },
+  diplomatic_protest:  { icon: '📣', color: 'var(--accent-orange)', label: 'PROTEST'         },
+  alliance_formed:     { icon: '🔗', color: 'var(--accent-cyan)', label: 'ALLIANCE'        },
+  alliance_broken:     { icon: '💔', color: 'var(--accent-magenta)', label: 'ALLIANCE BROKEN' },
+  conflict_risk:       { icon: '🔴', color: 'var(--accent-magenta)', label: 'CONFLICT RISK'   },
 };
 
 function EventRow({ event }: { event: WorldEvent }) {
-  const meta = EVENT_META[event.event_type] ?? { icon: '🌐', color: '#9ca3af', label: event.event_type };
+  const meta = EVENT_META[event.event_type] ?? { icon: '🌐', color: 'var(--accent-cyan)', label: event.event_type.toUpperCase() };
 
   return (
-    <div style={{
-      padding: '10px 0',
-      borderBottom: '1px solid rgba(255,255,255,0.05)',
-    }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontSize: 14 }}>{meta.icon}</span>
-        <span style={{
-          fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
-          color: meta.color, background: `${meta.color}18`,
-          padding: '2px 6px', borderRadius: 4,
-        }}>
+    <div
+      className="game-card"
+      style={{
+        marginBottom: 8,
+        padding: '10px 12px',
+        borderLeft: `4px solid ${meta.color}`,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+        <span style={{ fontSize: 13 }}>{meta.icon}</span>
+        <span
+          className="game-badge"
+          style={{
+            fontSize: 9,
+            color: meta.color,
+            borderColor: meta.color,
+            background: 'rgba(0,0,0,0.5)',
+          }}
+        >
           {meta.label}
         </span>
-        <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 'auto' }}>
-          yr {event.sim_year}
+        <span style={{ color: 'var(--accent-yellow)', fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700, marginLeft: 'auto' }}>
+          YR {event.sim_year}
         </span>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: 12 }}>{event.from_country}</span>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4, fontFamily: 'var(--font-heading)' }}>
+        <span style={{ fontWeight: 800, fontSize: 13, color: '#fff' }}>{event.from_country}</span>
         {event.to_country && (
           <>
-            <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>→</span>
-            <span style={{ fontWeight: 600, fontSize: 12 }}>{event.to_country}</span>
+            <span style={{ color: 'var(--accent-cyan)', fontSize: 11, fontWeight: 800 }}>⚡</span>
+            <span style={{ fontWeight: 800, fontSize: 13, color: '#fff' }}>{event.to_country}</span>
           </>
         )}
       </div>
 
-      <p style={{ color: '#9ca3af', fontSize: 12, margin: 0, lineHeight: 1.4 }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 11, margin: 0, lineHeight: 1.45 }}>
         {event.details.slice(0, 160)}{event.details.length > 160 ? '…' : ''}
       </p>
     </div>
@@ -57,14 +65,14 @@ interface Props {
 export default function WorldEventsFeed({ events, maxHeight }: Props) {
   if (!events.length) {
     return (
-      <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>
-        No inter-country events recorded yet. Events appear after the first agent simulation cycle.
-      </p>
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', padding: '16px 0', fontFamily: 'var(--font-heading)' }}>
+        🌐 NO WORLD EVENTS DETECTED YET
+      </div>
     );
   }
 
   return (
-    <div style={{ overflowY: 'auto', maxHeight: maxHeight }}>
+    <div style={{ overflowY: 'auto', maxHeight: maxHeight, paddingRight: 4 }}>
       {events.map(e => <EventRow key={e.id} event={e} />)}
     </div>
   );

@@ -1,0 +1,230 @@
+/* Arcade & Video Game Theme System for RealityShift */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;0,800;1,700&family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+  /* Arcade Fonts */
+  --font-display: 'Fredoka', 'Chakra Petch', cursive, sans-serif;
+  --font-heading: 'Chakra Petch', 'Fredoka', sans-serif;
+  --font-body: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* Vibrant Game Palette */
+  --bg-deep-space: #070913;
+  --bg-hud-panel: rgba(13, 17, 31, 0.92);
+  --bg-hud-card: #151b2e;
+  --bg-hud-card-hover: #1e2640;
+  
+  --game-border-ink: #0b0f19;
+  --game-border-light: rgba(255, 255, 255, 0.15);
+  --game-border-cyan: #00F0FF;
+  --game-border-yellow: #FFE600;
+  --game-border-magenta: #FF2E93;
+
+  /* Accents */
+  --accent-cyan: #00F0FF;
+  --accent-cyan-glow: rgba(0, 240, 255, 0.4);
+  --accent-yellow: #FFE600;
+  --accent-yellow-glow: rgba(255, 230, 0, 0.4);
+  --accent-magenta: #FF2E93;
+  --accent-green: #00FF66;
+  --accent-green-glow: rgba(0, 255, 102, 0.4);
+  --accent-orange: #FF7700;
+  --accent-purple: #9D00FF;
+
+  /* Game HUD Surfaces */
+  --hud-shadow: 4px 4px 0px #04060b;
+  --hud-shadow-lg: 6px 6px 0px #04060b;
+  --hud-shadow-glow-cyan: 0 0 16px rgba(0, 240, 255, 0.35);
+  --hud-shadow-glow-yellow: 0 0 16px rgba(255, 230, 0, 0.35);
+  
+  --radius-game-sm: 6px;
+  --radius-game-md: 12px;
+  --radius-game-lg: 18px;
+  --radius-game-pill: 9999px;
+}
+
+/* Global Game Elements */
+.game-font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.5px;
+}
+
+.game-font-heading {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+/* Chunky Game Card Styling */
+.game-panel {
+  background: var(--bg-hud-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 3px solid var(--game-border-ink);
+  outline: 1px solid var(--game-border-light);
+  border-radius: var(--radius-game-md);
+  box-shadow: var(--hud-shadow);
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-card {
+  background: var(--bg-hud-card);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-game-sm);
+  box-shadow: 2px 2px 0px #000;
+  padding: 12px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-card:hover {
+  background: var(--bg-hud-card-hover);
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0px #000;
+}
+
+/* Tactile 3D Buttons */
+.game-button {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-game-sm);
+  border: 2.5px solid var(--game-border-ink);
+  background: linear-gradient(180deg, #FFE600 0%, #FFB800 100%);
+  color: #0b0f19;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px #000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  user-select: none;
+  transition: all 0.1s ease;
+}
+
+.game-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px #000;
+  filter: brightness(1.08);
+}
+
+.game-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000;
+}
+
+.game-button-cyan {
+  background: linear-gradient(180deg, #00F0FF 0%, #00B8FF 100%);
+  color: #070a14;
+}
+
+.game-button-magenta {
+  background: linear-gradient(180deg, #FF5EA7 0%, #FF2E93 100%);
+  color: #fff;
+}
+
+.game-button-green {
+  background: linear-gradient(180deg, #5CFF95 0%, #00D94A 100%);
+  color: #051408;
+}
+
+.game-button-dark {
+  background: linear-gradient(180deg, #252e48 0%, #151b2e 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.game-button-dark:hover {
+  border-color: var(--accent-cyan);
+}
+
+/* Stat Progress Bar (Arcade Health Bar style) */
+.game-stat-bar-container {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  position: relative;
+}
+
+.game-stat-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+  box-shadow: 0 0 8px var(--accent-cyan-glow);
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Game Badges & Chips */
+.game-badge {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1.5px solid var(--game-border-ink);
+  background: #1a233b;
+  color: var(--accent-cyan);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+}
+
+.game-badge-yellow {
+  background: #332b00;
+  color: var(--accent-yellow);
+  border-color: #5c4e00;
+}
+
+.game-badge-magenta {
+  background: #33001b;
+  color: var(--accent-magenta);
+  border-color: #660036;
+}
+
+.game-badge-green {
+  background: #003314;
+  color: var(--accent-green);
+  border-color: #006629;
+}
+
+/* Ticker Animations */
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.game-ticker-wrapper {
+  overflow: hidden;
+  white-space: nowrap;
+  background: linear-gradient(90deg, #15092b, #09122b);
+  border-bottom: 2px solid var(--accent-cyan);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.game-ticker-content {
+  display: inline-block;
+  animation: ticker 35s linear infinite;
+}
+
+.game-ticker-content:hover {
+  animation-play-state: paused;
+}
+
+/* CRT Scanline Toggle Option */
+.crt-overlay::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 999;
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+  opacity: 0.6;
+}

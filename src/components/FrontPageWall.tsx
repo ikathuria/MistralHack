@@ -51,12 +51,12 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
   return (
     <div>
       {simDates.length > 1 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0 0 14px' }}>
-          <FilterChip label="All" active={simDate === 'all'} onClick={() => setSimDate('all')} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 0 18px' }}>
+          <FilterChip label="ALL YEARS" active={simDate === 'all'} onClick={() => setSimDate('all')} />
           {simDates.map(d => (
             <FilterChip
               key={d}
-              label={isoYear(d)}
+              label={`YEAR ${isoYear(d)}`}
               active={simDate === d}
               onClick={() => setSimDate(d)}
             />
@@ -66,14 +66,14 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-        gap: 14,
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        gap: 18,
       }}>
         {shown.map(e => (
-          <figure key={e.canonical_hash} style={{ margin: 0 }}>
+          <figure key={e.canonical_hash} className="game-card" style={{ margin: 0, padding: 10 }}>
             <div style={{
-              aspectRatio: '3 / 4', overflow: 'hidden', borderRadius: 8,
-              background: 'var(--surface-panel)', border: 'var(--border-subtle)',
+              aspectRatio: '3 / 4', overflow: 'hidden', borderRadius: 'var(--radius-game-sm)',
+              background: '#000', border: '2px solid var(--game-border-ink)',
             }}>
               <img
                 src={e.b2_url}
@@ -83,11 +83,11 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
               />
             </div>
             <figcaption style={{
-              marginTop: 6, fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)',
-              display: 'flex', justifyContent: 'space-between', gap: 8,
+              marginTop: 8, fontSize: 12, color: '#fff', fontFamily: 'var(--font-heading)', fontWeight: 800,
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
             }}>
               <span>{countryName(e.nation_iso)}</span>
-              <span style={{ color: 'var(--text-faint)' }}>{isoYear(e.sim_date)}</span>
+              <span className="game-badge game-badge-yellow" style={{ fontSize: 10, padding: '1px 5px' }}>{isoYear(e.sim_date)}</span>
             </figcaption>
           </figure>
         ))}
@@ -100,12 +100,9 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   return (
     <button
       onClick={onClick}
+      className={`game-button ${active ? 'game-button-cyan' : 'game-button-dark'}`}
       style={{
-        minHeight: 26, padding: '0 10px', borderRadius: 6, cursor: 'pointer',
-        fontSize: 'var(--font-size-xs)',
-        border: active ? '1px solid rgba(99,102,241,0.5)' : 'var(--border-subtle)',
-        background: active ? 'rgba(99,102,241,0.18)' : 'transparent',
-        color: active ? 'var(--accent-text)' : 'var(--text-muted)',
+        height: 30, padding: '0 12px', fontSize: 11,
       }}
     >
       {label}
