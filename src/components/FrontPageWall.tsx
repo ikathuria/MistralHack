@@ -128,10 +128,10 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 9999,
-            background: 'rgba(5, 7, 15, 0.92)',
-            backdropFilter: 'blur(10px)',
+            background: 'rgba(5, 7, 15, 0.94)',
+            backdropFilter: 'blur(12px)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            padding: 20, animation: 'fadeIn 0.2s ease-out',
+            padding: 16, overflowY: 'auto', animation: 'fadeIn 0.2s ease-out',
           }}
         >
           <div
@@ -139,17 +139,20 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
             className="game-panel"
             style={{
               position: 'relative',
-              maxWidth: '92vw', maxHeight: '92vh',
+              maxWidth: '94vw', maxHeight: '94vh',
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: 16, background: '#0b0f19',
               border: '3px solid var(--accent-cyan)',
-              boxShadow: '0 0 30px rgba(0, 240, 255, 0.3)',
+              boxShadow: '0 0 30px rgba(0, 240, 255, 0.35)',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
           >
             {/* Header toolbar */}
             <div style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginBottom: 12, gap: 16, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 10,
+              flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="game-badge game-badge-yellow" style={{ fontSize: 12, padding: '3px 8px' }}>
@@ -181,14 +184,22 @@ export default function FrontPageWall({ worldId = 'live' }: { worldId?: string }
 
             {/* High-res Image preview */}
             <div style={{
-              overflow: 'auto', maxHeight: 'calc(88vh - 70px)', width: '100%',
-              display: 'flex', justifyContent: 'center', background: '#000',
-              borderRadius: 6, border: '2px solid var(--game-border-ink)',
+              overflow: 'auto', flex: 1, width: '100%',
+              display: 'flex', justifyContent: 'center', alignItems: 'center',
+              background: '#000', borderRadius: 6, border: '2px solid var(--game-border-ink)',
+              padding: 4, boxSizing: 'border-box',
             }}>
               <img
                 src={selectedImage.b2_url}
                 alt={`Front page full view — ${countryName(selectedImage.nation_iso)}`}
-                style={{ maxHeight: '82vh', width: 'auto', objectFit: 'contain', display: 'block' }}
+                style={{
+                  maxHeight: 'calc(92vh - 90px)',
+                  maxWidth: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
               />
             </div>
           </div>
